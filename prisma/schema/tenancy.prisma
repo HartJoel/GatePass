@@ -1,0 +1,128 @@
+enum EstateRole {
+  MANAGER
+  RESIDENT
+  GUARD
+}
+
+/// Spans both levels an invitation can target.
+enum InviteRole {
+  COMPANY_ADMIN
+  MANAGER
+  RESIDENT
+  GUARD
+}
+
+/// One residential estate; the unit of operational isolation.
+model Estate {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company       Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  memberships   EstateMembership[]
+  units         ResidentialUnit[]
+  passes        VisitorPass[]
+  accessEvents  AccessEvent[]
+  notifications Notification[]
+  invitations   Invitation[]
+  auditLogs     AuditLog[]
+
+  @@unique([companyId, name])
+  @@unique([id, companyId])
+  @@index([companyId])
+  @@map("estate")
+}
+
+/// A user's role in an estate: manager, resident or guard. userId references
+/// neon_auth.user(id) — see the note at the top of auth.prisma.
+model EstateMembership {
+  id            String           @id @default(cuid())
+  estateId      String
+  userId        String           @db.Uuid
+  role          EstateRole
+  status        MembershipStatus @default(ACTIVE)
+  deactivatedAt DateTime?
+  createdAt     DateTime         @default(now())
+
+  estate Estate @relation(fields: [estateId], references: [id], onDelete: Restrict)
+
+  assignments    ResidentAssignment[]
+  issuedPasses   VisitorPass[]        @relation("VisitorPassIssuer")
+  redeemedPasses VisitorPass[]        @relation("VisitorPassRedeemedBy")
+  guardedEvents  AccessEvent[]        @relation("AccessEventGuard")
+
+  @@unique([estateId, userId])
+  @@unique([id, estateId])
+  @@index([userId])
+  @@index([estateId, role, status])
+  @@map("estate_membership")
+}
+
+/// A house, flat or similar.
+model ResidentialUnit {
+  id        String   @id @default(cuid())
+  estateId  String
+  label     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  estate      Estate               @relation(fields: [estateId], references: [id], onDelete: Restrict)
+  assignments ResidentAssignment[]
+  passes      VisitorPass[]
+  invitations Invitation[]
+
+  @@unique([estateId, label])
+  @@unique([id, estateId])
+  @@map("residential_unit")
+}
+
+/// Which resident lives in which unit (many-to-many).
+model ResidentAssignment {
+  id           String    @id @default(cuid())
+  estateId     String
+  unitId       String
+  membershipId String
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+
+  unit       ResidentialUnit  @relation(fields: [unitId, estateId], references: [id, estateId], onDelete: Restrict)
+  membership EstateMembership @relation(fields: [membershipId, estateId], references: [id, estateId], onDelete: Restrict)
+
+  issuedPasses VisitorPass[]
+
+  @@unique([membershipId, unitId])
+  @@index([estateId, unitId])
+  @@index([membershipId])
+  @@map("resident_assignment")
+}
+
+/// A pending offer to join a company or estate. invitedByUserId references
+/// neon_auth.user(id) — see the note at the top of auth.prisma.
+model Invitation {
+  id              String     @id @default(cuid())
+  companyId       String
+  estateId        String?
+  unitId          String?
+  email           String
+  role            InviteRole
+  tokenHash       String     @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  invitedByUserId String     @db.Uuid
+  createdAt       DateTime   @default(now())
+
+  company Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  estate  Estate?          @relation(fields: [estateId, companyId], references: [id, companyId], onDelete: Restrict)
+  unit    ResidentialUnit? @relation(fields: [unitId, estateId], references: [id, estateId], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([estateId])
+  @@index([email])
+  @@map("invitation")
+}

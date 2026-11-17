@@ -1,0 +1,125 @@
+enum PassStatus {
+  ACTIVE
+  REDEEMED
+  REVOKED
+}
+
+enum AccessDecision {
+  APPROVED
+  REJECTED
+}
+
+enum RejectionReason {
+  NOT_FOUND
+  NOT_YET_VALID
+  EXPIRED
+  REVOKED
+  ALREADY_USED
+  GUARD_REJECTED
+}
+
+/// A resident's authorization for one visitor to enter one unit. revokedByUserId references
+/// neon_auth.user(id) — see the note at the top of auth.prisma.
+model VisitorPass {
+  id              String     @id @default(cuid())
+  estateId        String
+  unitId          String
+  issuerId        String
+  visitorName     String
+  note            String?
+  tokenHash       String     @unique
+  validFrom       DateTime
+  expiresAt       DateTime
+  status          PassStatus @default(ACTIVE)
+  redeemedAt      DateTime?
+  redeemedById    String?
+  revokedAt       DateTime?
+  revokedByUserId String?    @db.Uuid
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  estate     Estate             @relation(fields: [estateId], references: [id], onDelete: Restrict)
+  unit       ResidentialUnit    @relation(fields: [unitId, estateId], references: [id, estateId], onDelete: Restrict)
+  issuer     EstateMembership   @relation("VisitorPassIssuer", fields: [issuerId, estateId], references: [id, estateId], onDelete: Restrict)
+  assignment ResidentAssignment @relation(fields: [issuerId, unitId], references: [membershipId, unitId], onDelete: Restrict)
+  redeemedBy EstateMembership?  @relation("VisitorPassRedeemedBy", fields: [redeemedById], references: [id], onDelete: Restrict)
+
+  accessEvents AccessEvent[]
+
+  @@unique([id, estateId])
+  @@index([estateId, status, expiresAt])
+  @@index([estateId, createdAt(sort: Desc)])
+  @@index([issuerId, createdAt(sort: Desc)])
+  @@index([unitId, createdAt(sort: Desc)])
+  @@map("visitor_pass")
+}
+
+/// Immutable record of a gate decision or system rejection. The application never updates or
+/// deletes rows; optionally enforce with a database trigger or revoked privileges later.
+model AccessEvent {
+  id              String           @id @default(cuid())
+  estateId        String
+  passId          String?
+  guardId         String
+  decision        AccessDecision
+  reason          RejectionReason?
+  note            String?
+  clientRequestId String?
+  createdAt       DateTime         @default(now())
+
+  estate Estate           @relation(fields: [estateId], references: [id], onDelete: Restrict)
+  pass   VisitorPass?     @relation(fields: [passId, estateId], references: [id, estateId], onDelete: Restrict)
+  guard  EstateMembership @relation("AccessEventGuard", fields: [guardId, estateId], references: [id, estateId], onDelete: Restrict)
+
+  notifications Notification[]
+
+  @@unique([guardId, clientRequestId])
+  @@index([estateId, createdAt(sort: Desc)])
+  @@index([estateId, decision, createdAt(sort: Desc)])
+  @@index([passId])
+  @@map("access_event")
+}
+
+/// In-app message to a resident when their pass is used or an attempt on it is rejected. The
+/// message text is derived from the linked event — add a type/body column only when a second
+/// notification source exists. userId references neon_auth.user(id) — see the note at the top
+/// of auth.prisma.
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String    @db.Uuid
+  estateId      String
+  accessEventId String
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  estate      Estate      @relation(fields: [estateId], references: [id], onDelete: Restrict)
+  accessEvent AccessEvent @relation(fields: [accessEventId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, accessEventId])
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notification")
+}
+
+/// Append-only record of administrative and security-sensitive actions. Distinct from
+/// AccessEvent: AccessEvent is what happened at the gate; AuditLog is who changed the system.
+/// actorUserId references neon_auth.user(id) — see the note at the top of auth.prisma.
+model AuditLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  estateId    String?
+  actorUserId String?  @db.Uuid
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  estate  Estate? @relation(fields: [estateId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([estateId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@map("audit_log")
+}

@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Shared across CompanyMembership and EstateMembership.
+enum MembershipStatus {
+  ACTIVE
+  DEACTIVATED
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+/// One value today; the enum exists so a second company role is a migration, not a redesign.
+enum CompanyRole {
+  COMPANY_ADMIN
+}
+
+/// Marks a user as platform super admin. Rows exist only via seed or a database-level
+/// operation — there is no signup or API path to create one.
+///
+/// userId is NOT a Prisma relation: the real User table lives in Neon Managed Better Auth's
+/// own `neon_auth` schema, which Prisma must never migrate (see references/integrity.sql for
+/// why, and for the hand-written FK that actually enforces this at the database level).
+model PlatformAdmin {
+  userId    String   @id @db.Uuid
+  createdAt DateTime @default(now())
+
+  @@map("platform_admin")
+}
+
+/// The paying tenant.
+model Company {
+  id           String        @id @default(cuid())
+  name         String
+  contactEmail String?
+  contactPhone String?
+  status       CompanyStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  memberships CompanyMembership[]
+  estates     Estate[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
+
+  @@map("company")
+}
+
+/// Links a user to a company. userId references neon_auth.user(id) — see PlatformAdmin's note.
+model CompanyMembership {
+  id        String           @id @default(cuid())
+  companyId String
+  userId    String           @db.Uuid
+  role      CompanyRole      @default(COMPANY_ADMIN)
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, userId])
+  @@index([userId])
+  @@map("company_membership")
+}

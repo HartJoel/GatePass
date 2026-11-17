@@ -1,0 +1,20 @@
+// Intentionally no User model here.
+//
+// Identity is Neon Managed Better Auth: Neon runs the auth server and owns a `neon_auth`
+// schema inside this same database (confirmed by introspecting it directly — it holds
+// user/session/account/verification plus its organization-plugin tables, none of which we
+// use). We never model or migrate any of it through Prisma:
+//
+//   - Prisma's multiSchema support would require declaring `neon_auth` on the datasource,
+//     which makes every table in that schema part of what `prisma migrate dev` diffs against.
+//     Neon's tables didn't come from our migration history, so every future `migrate dev` —
+//     not just the first one — would report them as drift and offer to reset the database.
+//   - We don't need a Prisma relation into it anyway: Better Auth's own session object already
+//     carries the signed-in user's name/email, so our services get those from the session, not
+//     a join. All our tables need from identity is the actor's `userId` (a UUID) to stamp onto
+//     their own rows.
+//
+// So: every `userId`-shaped column in this schema is a plain `String @db.Uuid` scalar, with no
+// `@relation`. The real foreign key to `neon_auth.user(id)` is added by hand-written SQL in
+// references/integrity.sql, applied as its own migration — the same pattern already used here
+// for the CHECK constraints and partial unique index Prisma can't express natively.
