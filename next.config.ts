@@ -5,8 +5,10 @@ const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
   },
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Cache Components defaults every route to static and requires each dynamic data
+  // access (params, session, tenant queries) to opt in via Suspense/"use cache"/instant.
+  // GatePass's architecture keeps tenant/request data dynamic and uncached everywhere
+  // (see gatepass-architecture skill), which is the opposite default, so this stays off.
   turbopack: {
     rules: {
       "*.css": {
