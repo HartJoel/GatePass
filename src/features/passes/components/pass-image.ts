@@ -1,4 +1,4 @@
-import { qrMatrix } from '@/components/ui/qr-code'
+import { encodeQr } from '@/lib/qr'
 import { formatWindow } from '@/lib/format'
 import type { Pass } from '@/features/passes/components/pass-card'
 
@@ -39,11 +39,13 @@ export function renderPassImage(pass: Pass): Promise<Blob> {
   ctx.font = '600 14px system-ui, -apple-system, sans-serif'
   ctx.fillText((STATUS_LABEL[pass.status] ?? pass.status).toUpperCase(), 40, 154)
 
-  const m = qrMatrix(pass.code)
+  const m = encodeQr(pass.code)
   const qrSize = 420
   const qrX = (width - qrSize) / 2
   const qrY = 190
   const cell = qrSize / m.length
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(qrX, qrY, qrSize, qrSize)
   ctx.fillStyle = '#111111'
   m.forEach((row, r) =>
     row.forEach((on, c) => {

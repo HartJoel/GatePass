@@ -1,30 +1,10 @@
 /**
- * Placeholder data for the Phase 3.5 guard/audit pages. See the note in
- * src/features/companies/demo-data.ts — same reasoning. Delete this file
- * once the real access-event/audit services land in Phase 5, slices E/H.
+ * Placeholder data for the Phase 3.5 audit page. Access events are now real (slice E) — see
+ * gate.service.ts. Delete this file once the real audit-log service lands in slice H.
  */
-
-export const DEMO_GUARD = { name: 'Segun Alabi' }
-
-export interface AccessEvent {
-  id: string
-  visitor: string
-  unit: string
-  guard: string
-  decision: 'approved' | 'rejected'
-  at: number
-}
 
 const now = Date.now()
 const MIN = 60_000
-
-export const DEMO_ACCESS_EVENTS: AccessEvent[] = [
-  { id: 'ev1', visitor: 'Chidi Okafor', unit: 'Block C, Flat 4', guard: 'Segun Alabi', decision: 'approved', at: now - 4 * MIN },
-  { id: 'ev2', visitor: 'Funmi Adewale', unit: 'Block A, Flat 2', guard: 'Segun Alabi', decision: 'approved', at: now - 52 * MIN },
-  { id: 'ev3', visitor: 'Unknown visitor', unit: '—', guard: 'Segun Alabi', decision: 'rejected', at: now - 70 * MIN },
-  { id: 'ev4', visitor: 'Emeka Nwosu', unit: 'Block B, Flat 9', guard: 'Segun Alabi', decision: 'approved', at: now - 125 * MIN },
-  { id: 'ev5', visitor: 'Sade Williams', unit: 'Block C, Flat 4', guard: 'Segun Alabi', decision: 'approved', at: now - 310 * MIN },
-]
 
 export interface AuditEntry {
   id: string

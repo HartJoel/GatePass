@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import { GuardShell } from '@/components/layout/guard-shell'
-import { AccessLogProvider } from '@/features/access-log/components/access-log-provider'
 import { requireActor } from '@/server/authz/actor'
 import { getEstateForMember } from '@/server/services/estate.service'
 
@@ -11,10 +10,8 @@ export default async function GuardLayout({ children, params }: LayoutProps<'/gu
   if (!estate) notFound()
 
   return (
-    <AccessLogProvider>
-      <GuardShell estateId={estateId} estateName={estate.name}>
-        {children}
-      </GuardShell>
-    </AccessLogProvider>
+    <GuardShell estateId={estateId} estateName={estate.name}>
+      {children}
+    </GuardShell>
   )
 }

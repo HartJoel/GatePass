@@ -27,19 +27,31 @@ export interface EstateGrant {
   companyId: string
 }
 
+/** Company admins inherit the admin-type permissions (manage/view the estate) — never the
+ * role-specific operational ones. "A company admin CANNOT create passes or operate the gate"
+ * is a hard exclusion in the gatepass-auth skill; without this allowlist, every company admin
+ * would silently pass create_pass/operate_gate checks too, since they're a company admin of
+ * every one of their own estates. */
+const COMPANY_ADMIN_INHERITED_PERMISSIONS: readonly EstatePermission[] = ['manage_estate', 'view_estate']
+
 /** Synchronous, fail closed. Company admins inherit management permissions in their company's
  * estates via actor.companies[].estateIds, so they're checked before falling back to a direct
  * EstateMembership. */
 export function authorizeEstate(actor: Actor, estateId: string, permission: EstatePermission): EstateGrant {
   const companyMembership = actor.companies.find((c) => c.estateIds.includes(estateId))
-  if (companyMembership) {
+  if (companyMembership && COMPANY_ADMIN_INHERITED_PERMISSIONS.includes(permission)) {
     if (companyMembership.companyStatus === 'SUSPENDED') throw new AppError('COMPANY_SUSPENDED', 'This company is suspended.')
     if (companyMembership.status === 'DEACTIVATED') throw new AppError('FORBIDDEN', 'Your access has been deactivated.')
     return { role: 'COMPANY_ADMIN', membershipId: null, companyId: companyMembership.companyId }
   }
 
   const estateMembership = actor.estates.find((e) => e.estateId === estateId)
-  if (!estateMembership) throw new AppError('NOT_FOUND', 'Not found.')
+  if (!estateMembership) {
+    // A company admin of this estate's company has a real relationship to it (just not this
+    // permission) — FORBIDDEN, not NOT_FOUND, which is reserved for no relationship at all.
+    if (companyMembership) throw new AppError('FORBIDDEN', 'You don’t have permission to do that.')
+    throw new AppError('NOT_FOUND', 'Not found.')
+  }
   if (estateMembership.companyStatus === 'SUSPENDED') throw new AppError('COMPANY_SUSPENDED', 'This company is suspended.')
   if (estateMembership.status === 'DEACTIVATED') throw new AppError('FORBIDDEN', 'Your access has been deactivated.')
   if (!ESTATE_PERMISSIONS[permission].includes(estateMembership.role)) throw new AppError('FORBIDDEN', 'You don’t have permission to do that.')
