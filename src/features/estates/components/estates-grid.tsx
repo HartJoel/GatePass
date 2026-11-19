@@ -1,14 +1,9 @@
-'use client'
-
-import { useParams } from 'next/navigation'
 import { Building2, Plus } from 'lucide-react'
 import { LinkButton } from '@/components/ui/button'
 import { EstateCard } from '@/features/estates/components/estate-card'
-import { useCompanyData } from '@/features/companies/components/company-data-provider'
+import type { EstateModel } from '@/generated/prisma/models'
 
-export function EstatesGrid() {
-  const { companyId } = useParams<{ companyId: string }>()
-  const { estates, managerOf } = useCompanyData()
+export function EstatesGrid({ companyId, estates }: { companyId: string; estates: EstateModel[] }) {
   const none = estates.length === 0
   const newHref = `/companies/${companyId}/estates/new`
 
@@ -17,7 +12,7 @@ export function EstatesGrid() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           <h1 className="type-h1 text-ink">Estates</h1>
-          {!none && <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">Every estate Crestview manages, with its manager and status.</p>}
+          {!none && <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">Every estate this company manages.</p>}
         </div>
         {!none && (
           <LinkButton href={newHref} className="w-auto">
@@ -40,22 +35,16 @@ export function EstatesGrid() {
         </section>
       ) : (
         <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {estates.map((e) => {
-            const m = managerOf(e)
-            return (
-              <li key={e.id} className="flex">
-                <EstateCard
-                  name={e.name}
-                  address={`${e.address}, ${e.city}`}
-                  units={e.units}
-                  manager={m?.name}
-                  managerPending={m?.pending}
-                  status={e.status}
-                  href={`/companies/${companyId}/estates/${e.id}`}
-                />
-              </li>
-            )
-          })}
+          {estates.map((e) => (
+            <li key={e.id} className="flex">
+              <EstateCard
+                name={e.name}
+                address={e.city ? `${e.address ?? ''}, ${e.city}` : (e.address ?? '')}
+                status="active"
+                href={`/companies/${companyId}/estates/${e.id}`}
+              />
+            </li>
+          ))}
         </ul>
       )}
     </>

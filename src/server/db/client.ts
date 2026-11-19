@@ -1,10 +1,9 @@
-import 'server-only'
+// No 'server-only' guard: prisma/seed.ts imports this outside Next's bundler. See env.ts.
 import { PrismaClient } from '@/generated/prisma/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
 import { env } from '@/server/env'
 
 declare global {
-  // eslint-disable-next-line no-var
   var prismaClient: PrismaClient | undefined
 }
 

@@ -1,5 +1,5 @@
 export function cn(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(' ')
+  return parts.filter(Boolean).join(" ");
 }
 
 /**
@@ -8,6 +8,5 @@ export function cn(...parts: Array<string | false | null | undefined>) {
  * (it only pattern-matches direct calls, not calls through a helper).
  */
 export function nowMs(): number {
-  return Date.now()
+  return Date.now();
 }
-
