@@ -1,11 +1,11 @@
 'use client'
 
 import { LogOut } from 'lucide-react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { BottomTabs } from '@/components/layout/navigation'
 import { guardNav } from '@/lib/constants/navigation'
+import { signOutAction } from '@/server/actions/auth.actions'
 
 type Section = (typeof guardNav)[number]['id']
 
@@ -27,9 +27,15 @@ export function GuardShell({ estateId, estateName, children }: { estateId: strin
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-5">
         <p className="truncate text-[15px] font-semibold text-ink">{estateName} · Gate</p>
         {/* TODO(phase 5): read the signed-in guard from the session instead of a placeholder. */}
-        <Link href="/sign-in" aria-label="Sign out" title="Sign out" className="ml-auto rounded-control p-2.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink">
+        <button
+          type="button"
+          aria-label="Sign out"
+          title="Sign out"
+          className="ml-auto rounded-control p-2.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+          onClick={() => signOutAction().then(() => router.push('/sign-in'))}
+        >
           <LogOut className="size-[18px]" aria-hidden />
-        </Link>
+        </button>
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[560px] px-4 pb-8 pt-6">{children}</div>

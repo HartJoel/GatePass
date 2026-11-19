@@ -3,12 +3,16 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Power } from "lucide-react";
+import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Modal } from "@/components/ui/overlay";
+import { useToast } from "@/components/ui/toast";
 import {
   createEstateAction,
   updateEstateAction,
+  setEstateStatusAction,
 } from "@/server/actions/estate.actions";
 import type { EstateModel } from "@/generated/prisma/models";
 
@@ -22,6 +26,7 @@ export function EstateForm({
   const editing = !!estate;
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const toast = useToast();
   const estatesHref = `/companies/${companyId}/estates`;
 
   const [name, setName] = useState(estate?.name ?? "");
@@ -31,6 +36,23 @@ export function EstateForm({
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [confirmOff, setConfirmOff] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const off = estate?.status === "DEACTIVATED";
+
+  async function onToggleStatus(next: "ACTIVE" | "DEACTIVATED") {
+    if (!estate) return;
+    setStatusBusy(true);
+    const result = await setEstateStatusAction(estate.id, companyId, next);
+    setStatusBusy(false);
+    setConfirmOff(false);
+    if (result.error) {
+      setServerError(result.error.message);
+      return;
+    }
+    toast({ tone: next === "ACTIVE" ? "success" : "neutral", title: next === "ACTIVE" ? "Estate reactivated" : "Estate deactivated", description: estate.name });
+    router.refresh();
+  }
 
   const unitsNum = units.trim() === "" ? undefined : Number(units);
   const errors = {
@@ -92,6 +114,11 @@ export function EstateForm({
       </header>
 
       <div className="flex max-w-[680px] flex-col gap-6">
+        {off && (
+          <Banner tone="info" title="This estate is deactivated">
+            Residents and guards can’t use it, and passes won’t work at the gate. Reactivate it below to switch it back on.
+          </Banner>
+        )}
         {serverError && (
           <p className="rounded-control bg-danger-bg px-3.5 py-3 text-sm font-medium text-danger-fg">
             {serverError}
@@ -157,7 +184,50 @@ export function EstateForm({
             </div>
           </section>
         </form>
+
+        {editing && estate && (
+          <section className="rounded-card border border-line bg-surface">
+            <div className="flex items-center justify-between gap-6 p-6">
+              <div>
+                <h2 className="type-h3">{off ? "Reactivate this estate" : "Deactivate this estate"}</h2>
+                <p className="mt-0.5 max-w-md text-sm text-ink-2">
+                  {off
+                    ? "Switch the estate back on so residents can issue passes and guards can scan them."
+                    : "Switch the estate off without deleting anything. You can reactivate it at any time."}
+                </p>
+              </div>
+              {off ? (
+                <Button variant="ghost" icon={<Power />} disabled={statusBusy} onClick={() => onToggleStatus("ACTIVE")}>
+                  {statusBusy ? "Reactivating…" : "Reactivate estate"}
+                </Button>
+              ) : (
+                <Button variant="destructive-ghost" disabled={statusBusy} onClick={() => setConfirmOff(true)}>
+                  Deactivate estate
+                </Button>
+              )}
+            </div>
+          </section>
+        )}
       </div>
+
+      {estate && (
+        <Modal
+          open={confirmOff}
+          onClose={() => setConfirmOff(false)}
+          title={`Deactivate ${estate.name}?`}
+          description="Residents and guards lose access straight away and active visitor passes stop working at the gate. Records are kept, and you can reactivate the estate at any time."
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmOff(false)} disabled={statusBusy}>
+                Keep estate active
+              </Button>
+              <Button variant="destructive-ghost" disabled={statusBusy} onClick={() => onToggleStatus("DEACTIVATED")}>
+                {statusBusy ? "Deactivating…" : "Deactivate estate"}
+              </Button>
+            </>
+          }
+        />
+      )}
     </>
   );
 }

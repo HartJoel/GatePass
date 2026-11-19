@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { saveEstateSchema } from "@/lib/validation/estate.schema";
-import { createEstate, updateEstate } from "@/server/services/estate.service";
+import { createEstate, updateEstate, setEstateStatus } from "@/server/services/estate.service";
 import { requireActor } from "@/server/authz/actor";
 import { normalizeError } from "@/server/errors/to-result";
 import type { ActionResult } from "@/lib/types";
+import type { EstateStatus } from "@/generated/prisma/enums";
 
 function parseOrError(input: unknown) {
   return saveEstateSchema.safeParse(input);
@@ -60,6 +61,18 @@ export async function updateEstateAction(
   try {
     const actor = await requireActor();
     const estate = await updateEstate(actor, estateId, parsed.data);
+    revalidatePath(`/companies/${companyId}/estates`);
+    revalidatePath(`/companies/${companyId}/estates/${estateId}`);
+    return { data: { estateId: estate.id } };
+  } catch (err) {
+    return normalizeError(err);
+  }
+}
+
+export async function setEstateStatusAction(estateId: string, companyId: string, status: EstateStatus): Promise<ActionResult<{ estateId: string }>> {
+  try {
+    const actor = await requireActor();
+    const estate = await setEstateStatus(actor, estateId, status);
     revalidatePath(`/companies/${companyId}/estates`);
     revalidatePath(`/companies/${companyId}/estates/${estateId}`);
     return { data: { estateId: estate.id } };

@@ -7,6 +7,7 @@ import { Banner } from '@/components/ui/banner'
 import { Field } from '@/components/ui/field'
 import { LinkButton } from '@/components/ui/button'
 import { AuthCard, AuthFooter, AuthHeader, PasswordField, StatePanel, SubmitButton, focusFirstInvalid, linkClass, v } from './auth-shell'
+import { signInAction } from '@/server/actions/auth.actions'
 
 export function LoginForm() {
   const ref = useRef<HTMLFormElement>(null)
@@ -28,9 +29,12 @@ export function LoginForm() {
     if (v.email(email) || !password) return focusFirstInvalid(ref.current)
     setWrong(false)
     setBusy(true)
-    // TODO(phase 5, slice A): call the sign-in Server Action against Better Auth.
-    await new Promise((r) => setTimeout(r, 700))
+    const result = await signInAction({ email, password })
     setBusy(false)
+    if (result.error) {
+      setWrong(true)
+      return
+    }
     setDone(true)
   }
 

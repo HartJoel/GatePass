@@ -3,6 +3,7 @@ import { db } from "@/server/db/client";
 import { authorizeCompany, authorizeEstate } from "@/server/authz/policies";
 import type { Actor } from "@/server/authz/actor";
 import type { SaveEstateInput } from "@/lib/validation/estate.schema";
+import type { EstateStatus } from "@/generated/prisma/enums";
 
 /**
  * Manager assignment (existing member or invite-by-email) isn't implemented yet — it depends
@@ -52,4 +53,10 @@ export async function updateEstate(
     where: { id: estateId },
     data: { name: input.name, address: input.address, city: input.city },
   });
+}
+
+export async function setEstateStatus(actor: Actor, estateId: string, status: EstateStatus) {
+  authorizeEstate(actor, estateId, "manage_estate");
+
+  return db.estate.update({ where: { id: estateId }, data: { status } });
 }

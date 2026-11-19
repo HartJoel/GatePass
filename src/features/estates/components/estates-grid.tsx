@@ -40,7 +40,7 @@ export function EstatesGrid({ companyId, estates }: { companyId: string; estates
               <EstateCard
                 name={e.name}
                 address={e.city ? `${e.address ?? ''}, ${e.city}` : (e.address ?? '')}
-                status="active"
+                status={e.status === 'DEACTIVATED' ? 'deactivated' : 'active'}
                 href={`/companies/${companyId}/estates/${e.id}`}
               />
             </li>

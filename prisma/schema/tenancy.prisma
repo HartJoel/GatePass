@@ -4,6 +4,11 @@ enum EstateRole {
   GUARD
 }
 
+enum EstateStatus {
+  ACTIVE
+  DEACTIVATED
+}
+
 /// Spans both levels an invitation can target.
 enum InviteRole {
   COMPANY_ADMIN
@@ -14,14 +19,15 @@ enum InviteRole {
 
 /// One residential estate; the unit of operational isolation.
 model Estate {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   companyId String
   name      String
   address   String?
   city      String?
   state     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    EstateStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   company       Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
   memberships   EstateMembership[]
