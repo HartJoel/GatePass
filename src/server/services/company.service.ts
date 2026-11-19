@@ -1,9 +1,12 @@
 import "server-only";
 import { auth } from "@/server/auth/auth";
 import { db } from "@/server/db/client";
+import { authorizeCompany } from "@/server/authz/policies";
 import { AppError } from "@/server/errors/app-error";
 import { logger } from "@/server/logger";
+import type { Actor } from "@/server/authz/actor";
 import type { RegisterCompanyInput } from "@/lib/validation/company.schema";
+import type { CompanyRole, EstateRole, MembershipStatus } from "@/generated/prisma/enums";
 
 export interface RegisteredCompany {
   companyId: string;
@@ -59,4 +62,64 @@ export async function registerCompany(
       "Your account was created, but we couldn’t finish setting up your company. Sign in and try again.",
     );
   }
+}
+
+export interface CompanyMemberRow {
+  /** userId + role: a user who is somehow both a company admin and an estate member would
+   * otherwise collide, since DataTable needs one unique id per row. */
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: CompanyRole | EstateRole;
+  estateIds: string[] | "all";
+  status: MembershipStatus;
+}
+
+/**
+ * Names/emails live in neon_auth.user, not in our membership tables — read-only, unmodelled
+ * raw query (see the note at the top of auth.prisma on why neon_auth is never a Prisma model).
+ * Estate memberships are grouped by (userId, role) so one person managing several estates is
+ * one row, matching how the members table displays them.
+ */
+export async function listMembers(actor: Actor, companyId: string): Promise<CompanyMemberRow[]> {
+  authorizeCompany(actor, companyId, "manage_company");
+
+  const [companyMemberships, estateMemberships] = await Promise.all([
+    db.companyMembership.findMany({ where: { companyId } }),
+    db.estateMembership.findMany({ where: { estate: { companyId } } }),
+  ]);
+
+  const userIds = [
+    ...new Set([...companyMemberships.map((m) => m.userId), ...estateMemberships.map((m) => m.userId)]),
+  ];
+  if (userIds.length === 0) return [];
+
+  const users = await db.$queryRaw<{ id: string; name: string; email: string }[]>`
+    SELECT id, name, email FROM neon_auth."user" WHERE id = ANY(${userIds}::uuid[])
+  `;
+  const userById = new Map(users.map((u) => [u.id, u]));
+
+  const rows: CompanyMemberRow[] = companyMemberships.map((m) => {
+    const u = userById.get(m.userId);
+    return { id: `${m.userId}:${m.role}`, userId: m.userId, name: u?.name ?? m.userId, email: u?.email ?? "", role: m.role, estateIds: "all", status: m.status };
+  });
+
+  const groups = new Map<string, { userId: string; role: EstateRole; estateIds: string[]; status: MembershipStatus }>();
+  for (const m of estateMemberships) {
+    const key = `${m.userId}:${m.role}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.estateIds.push(m.estateId);
+      if (m.status === "DEACTIVATED") existing.status = "DEACTIVATED";
+    } else {
+      groups.set(key, { userId: m.userId, role: m.role, estateIds: [m.estateId], status: m.status });
+    }
+  }
+  for (const g of groups.values()) {
+    const u = userById.get(g.userId);
+    rows.push({ id: `${g.userId}:${g.role}`, userId: g.userId, name: u?.name ?? g.userId, email: u?.email ?? "", role: g.role, estateIds: g.estateIds, status: g.status });
+  }
+
+  return rows;
 }

@@ -1,9 +1,11 @@
 'use client'
 
 import { useRef, useState, type FormEvent } from 'react'
-import { CheckCircle2, Clock, Link2Off, MailCheck, UserCheck } from 'lucide-react'
+import { CheckCircle2, Clock, Link2Off, UserCheck } from 'lucide-react'
+import { Banner } from '@/components/ui/banner'
 import { Field } from '@/components/ui/field'
 import { LinkButton } from '@/components/ui/button'
+import { acceptInvitationAction } from '@/server/actions/invitation.actions'
 import { AuthCard, AuthFooter, AuthHeader, PASSWORD_HINT, PasswordField, StatePanel, SubmitButton, focusFirstInvalid, linkClass, v } from './auth-shell'
 
 export interface InviteDetails {
@@ -15,23 +17,25 @@ export interface InviteDetails {
 
 export type InviteStatus = 'ready' | 'invalid' | 'expired' | 'used'
 
-export function AcceptInvite({ status, invite }: { status: InviteStatus; invite: InviteDetails }) {
+export function AcceptInvite({ status, invite, token }: { status: InviteStatus; invite: InviteDetails; token: string }) {
   if (status === 'invalid') return <InvalidLink />
   if (status === 'expired') return <ExpiredLink invite={invite} />
   if (status === 'used') return <UsedLink invite={invite} />
-  return <AcceptForm invite={invite} />
+  return <AcceptForm invite={invite} token={token} />
 }
 
 /* ------------------------------------------------------------------ */
 /* Valid invite                                                        */
 /* ------------------------------------------------------------------ */
-function AcceptForm({ invite }: { invite: InviteDetails }) {
+function AcceptForm({ invite, token }: { invite: InviteDetails; token: string }) {
   const ref = useRef<HTMLFormElement>(null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const destination = invite.estate || invite.company
 
   const errors = {
     password: submitted ? v.newPassword(password) : undefined,
@@ -42,31 +46,35 @@ function AcceptForm({ invite }: { invite: InviteDetails }) {
     e.preventDefault()
     setSubmitted(true)
     if (v.newPassword(password) || v.confirm(password)(confirm)) return focusFirstInvalid(ref.current)
+    setServerError(null)
     setBusy(true)
-    // TODO(phase 5, slice B): acceptInvitationAction — create/verify the user, create the
-    // membership (+ unit assignment for residents) and mark the invite accepted, in one transaction.
-    await new Promise((r) => setTimeout(r, 900))
+    const result = await acceptInvitationAction({ token, password })
     setBusy(false)
+    if (result.error) {
+      setServerError(result.error.message)
+      return
+    }
     setDone(true)
   }
 
   if (done)
     return (
       <AuthCard>
-        <StatePanel icon={CheckCircle2} tone="success" title={`Welcome to ${invite.estate}`} actions={<LinkButton href="/sign-in">Continue to sign in</LinkButton>}>
-          Your account is ready. You can now create visitor passes for your guests.
+        <StatePanel icon={CheckCircle2} tone="success" title={`Welcome to ${destination}`} actions={<LinkButton href="/dashboard">Continue</LinkButton>}>
+          Your account is ready.
         </StatePanel>
       </AuthCard>
     )
 
   return (
     <AuthCard>
-      <AuthHeader title={`Join ${invite.estate}`} compact />
+      <AuthHeader title={`Join ${destination}`} compact />
       <p className="mb-6 rounded-control bg-surface-2 px-3.5 py-3 text-[15px] text-ink-2">
         <strong className="font-semibold text-ink">{invite.company}</strong> invited you to join{' '}
-        <strong className="font-semibold text-ink">{invite.estate}</strong> as <strong className="font-semibold text-ink">{invite.role}</strong>.
+        <strong className="font-semibold text-ink">{destination}</strong> as <strong className="font-semibold text-ink">{invite.role}</strong>.
       </p>
       <form ref={ref} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        {serverError && <Banner title="Couldn’t create your account">{serverError}</Banner>}
         <Field label="Email" type="email" value={invite.email} readOnly disabled hint="Your invite was sent to this address." />
         <PasswordField
           label="Create a password"
@@ -127,38 +135,14 @@ function InvalidLink() {
 }
 
 function ExpiredLink({ invite }: { invite: InviteDetails }) {
-  const [requested, setRequested] = useState(false)
-  const [busy, setBusy] = useState(false)
-
-  async function request() {
-    setBusy(true)
-    // TODO(phase 5, slice B): resendInvite — invalidates the old token and issues a new one.
-    await new Promise((r) => setTimeout(r, 700))
-    setBusy(false)
-    setRequested(true)
-  }
-
-  if (requested)
-    return (
-      <AuthCard>
-        <StatePanel icon={MailCheck} tone="accent" title="New invite requested" actions={<LinkButton href="/sign-in" variant="ghost">Back to sign in</LinkButton>}>
-          We’ve asked <span className="font-medium text-ink">{invite.company}</span> to send you a fresh link for {invite.estate}. Watch for an email at{' '}
-          <span className="break-all font-medium text-ink">{invite.email}</span>.
-        </StatePanel>
-      </AuthCard>
-    )
-
+  const destination = invite.estate || invite.company
   return (
     <AuthCard>
       <StatePanel
         icon={Clock}
         tone="warning"
         title="This invite has expired"
-        actions={
-          <SubmitButton type="button" busy={busy} busyLabel="Requesting…" onClick={request}>
-            Request a new invite
-          </SubmitButton>
-        }
+        actions={<LinkButton href="/sign-in" variant="ghost">Back to sign in</LinkButton>}
         aside={
           <>
             Already set up your account?{' '}
@@ -168,13 +152,14 @@ function ExpiredLink({ invite }: { invite: InviteDetails }) {
           </>
         }
       >
-        Invites for {invite.estate} are valid for 7 days. Request a new one and {invite.company} will be notified.
+        Invite links for {destination} are valid for 7 days. Ask {invite.company || 'your company admin'} to send you a new one from Pending invites.
       </StatePanel>
     </AuthCard>
   )
 }
 
 function UsedLink({ invite }: { invite: InviteDetails }) {
+  const destination = invite.estate || invite.company
   return (
     <AuthCard>
       <StatePanel
@@ -190,7 +175,7 @@ function UsedLink({ invite }: { invite: InviteDetails }) {
           </>
         }
       >
-        An account was already created with this invite. Sign in to continue to {invite.estate}.
+        An account was already created with this invite. Sign in to continue to {destination}.
       </StatePanel>
     </AuthCard>
   )

@@ -2,38 +2,34 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 import { MailPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { useCompanyData } from '@/features/companies/components/company-data-provider'
-import { InviteDialog } from './invite-dialog'
+import { InviteDialog, type InviteEstateOption } from './invite-dialog'
 
-export function PeopleHeader() {
+export function PeopleHeader({ companyId, estates }: { companyId: string; estates: InviteEstateOption[] }) {
   const [inviting, setInviting] = useState(false)
   return (
     <>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           <h1 className="type-h1 text-ink">People</h1>
-          <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">Everyone with access to Crestview’s estates, and invites that haven’t been accepted yet.</p>
+          <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">Everyone with access to your estates, and invites that haven’t been accepted yet.</p>
         </div>
         <Button variant="filled" icon={<MailPlus />} onClick={() => setInviting(true)}>
           Invite member
         </Button>
       </header>
-      <InviteDialog open={inviting} onClose={() => setInviting(false)} />
+      <InviteDialog open={inviting} onClose={() => setInviting(false)} companyId={companyId} estates={estates} />
     </>
   )
 }
 
 /** Underline tabs that navigate between the real /members and /members/invites routes. */
-export function PeopleTabs({ active }: { active: 'members' | 'invites' }) {
-  const { companyId } = useParams<{ companyId: string }>()
-  const { members, invites } = useCompanyData()
+export function PeopleTabs({ active, companyId, memberCount, inviteCount }: { active: 'members' | 'invites'; companyId: string; memberCount: number; inviteCount: number }) {
   const items = [
-    { id: 'members' as const, label: 'Members', count: members.length, href: `/companies/${companyId}/members` },
-    { id: 'invites' as const, label: 'Pending invites', count: invites.length, href: `/companies/${companyId}/members/invites` },
+    { id: 'members' as const, label: 'Members', count: memberCount, href: `/companies/${companyId}/members` },
+    { id: 'invites' as const, label: 'Pending invites', count: inviteCount, href: `/companies/${companyId}/members/invites` },
   ]
   return (
     <div role="tablist" aria-label="People" className="mb-6 flex gap-6 border-b border-line">

@@ -6,18 +6,27 @@ import { Avatar } from '@/components/ui/avatar'
 import { DataTable, type Column } from '@/components/data/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
-import type { Member } from '@/features/companies/demo-data'
-import { useCompanyData } from '@/features/companies/components/company-data-provider'
+import type { CompanyMemberRow } from '@/server/services/company.service'
 
-export function MembersTable() {
-  const { members, estateName } = useCompanyData()
+const ROLE_LABEL: Record<string, string> = {
+  COMPANY_ADMIN: 'Company admin',
+  MANAGER: 'Estate manager',
+  RESIDENT: 'Resident',
+  GUARD: 'Guard',
+}
+
+export function MembersTable({ members, estates }: { members: CompanyMemberRow[]; estates: { id: string; name: string }[] }) {
   const [q, setQ] = useState('')
+  const estateName = useMemo(() => {
+    const byId = new Map(estates.map((e) => [e.id, e.name]))
+    return (id: string) => byId.get(id) ?? 'Unknown estate'
+  }, [estates])
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
     return s ? members.filter((m) => m.name.toLowerCase().includes(s) || m.email.toLowerCase().includes(s)) : members
   }, [members, q])
 
-  const columns: Column<Member>[] = [
+  const columns: Column<CompanyMemberRow>[] = [
     {
       key: 'name',
       header: 'Name',
@@ -32,7 +41,7 @@ export function MembersTable() {
         </div>
       ),
     },
-    { key: 'role', header: 'Role', cell: (m) => <span className="text-ink">{m.role}</span> },
+    { key: 'role', header: 'Role', cell: (m) => <span className="text-ink">{ROLE_LABEL[m.role] ?? m.role}</span> },
     {
       key: 'estates',
       header: 'Estates',
@@ -47,7 +56,7 @@ export function MembersTable() {
         )
       },
     },
-    { key: 'status', header: 'Status', cell: (m) => <StatusBadge status={m.status} /> },
+    { key: 'status', header: 'Status', cell: (m) => <StatusBadge status={m.status === 'ACTIVE' ? 'active' : 'deactivated'} /> },
   ]
 
   return (

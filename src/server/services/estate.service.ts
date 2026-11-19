@@ -60,3 +60,11 @@ export async function setEstateStatus(actor: Actor, estateId: string, status: Es
 
   return db.estate.update({ where: { id: estateId }, data: { status } });
 }
+
+/** For the resident/guard shells: any active member of the estate (not just managers) may load
+ * its name — unlike getEstate, which is manager/admin-only. */
+export async function getEstateForMember(actor: Actor, estateId: string) {
+  authorizeEstate(actor, estateId, "view_estate");
+
+  return db.estate.findUnique({ where: { id: estateId }, select: { id: true, name: true } });
+}
