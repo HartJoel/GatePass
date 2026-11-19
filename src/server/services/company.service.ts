@@ -6,7 +6,7 @@ import { AppError } from "@/server/errors/app-error";
 import { logger } from "@/server/logger";
 import type { Actor } from "@/server/authz/actor";
 import type { RegisterCompanyInput } from "@/lib/validation/company.schema";
-import type { CompanyRole, EstateRole, MembershipStatus } from "@/generated/prisma/enums";
+import type { CompanyRole, EstateRole, EstateStatus, MembershipStatus } from "@/generated/prisma/enums";
 
 export interface RegisteredCompany {
   companyId: string;
@@ -122,4 +122,39 @@ export async function listMembers(actor: Actor, companyId: string): Promise<Comp
   }
 
   return rows;
+}
+
+export interface CompanyOverviewStats {
+  estates: { id: string; name: string; city: string | null; status: EstateStatus }[];
+  estateCount: number;
+  activeEstateCount: number;
+  unitCount: number;
+  residentCount: number;
+  passesThisWeek: number;
+}
+
+export async function getCompanyOverview(actor: Actor, companyId: string): Promise<CompanyOverviewStats> {
+  authorizeCompany(actor, companyId, "manage_company");
+
+  const estates = await db.estate.findMany({
+    where: { companyId },
+    select: { id: true, name: true, city: true, status: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const estateIds = estates.map((e) => e.id);
+
+  const [unitCount, residentCount, passesThisWeek] = await Promise.all([
+    db.residentialUnit.count({ where: { estateId: { in: estateIds } } }),
+    db.estateMembership.count({ where: { estateId: { in: estateIds }, role: "RESIDENT", status: "ACTIVE" } }),
+    db.visitorPass.count({ where: { estateId: { in: estateIds }, createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } } }),
+  ]);
+
+  return {
+    estates,
+    estateCount: estates.length,
+    activeEstateCount: estates.filter((e) => e.status === "ACTIVE").length,
+    unitCount,
+    residentCount,
+    passesThisWeek,
+  };
 }

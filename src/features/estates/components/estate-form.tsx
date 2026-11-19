@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Home, Power } from "lucide-react";
+import { ChevronLeft, ClipboardList, Home, Power } from "lucide-react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -115,13 +115,22 @@ export function EstateForm({
             </p>
           </div>
           {editing && estate && (
-            <Link
-              href={`/companies/${companyId}/estates/${estate.id}/units`}
-              className="inline-flex h-11 items-center gap-2 rounded-control border border-line px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-surface-2"
-            >
-              <Home className="size-[18px]" aria-hidden />
-              Manage units
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/companies/${companyId}/estates/${estate.id}/units`}
+                className="inline-flex h-11 items-center gap-2 rounded-control border border-line px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-surface-2"
+              >
+                <Home className="size-[18px]" aria-hidden />
+                Manage units
+              </Link>
+              <Link
+                href={`/companies/${companyId}/estates/${estate.id}/access-log`}
+                className="inline-flex h-11 items-center gap-2 rounded-control border border-line px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-surface-2"
+              >
+                <ClipboardList className="size-[18px]" aria-hidden />
+                Access log
+              </Link>
+            </div>
           )}
         </div>
       </header>
