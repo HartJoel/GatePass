@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Power } from "lucide-react";
+import { ChevronLeft, Home, Power } from "lucide-react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -103,14 +103,27 @@ export function EstateForm({
           <ChevronLeft className="size-4" aria-hidden />
           Estates
         </Link>
-        <h1 className="type-h1 text-ink">
-          {editing ? estate.name : "Register estate"}
-        </h1>
-        <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
-          {editing
-            ? "Update the estate’s details."
-            : "Add the estate’s details. You can invite residents and guards afterwards."}
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div>
+            <h1 className="type-h1 text-ink">
+              {editing ? estate.name : "Register estate"}
+            </h1>
+            <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">
+              {editing
+                ? "Update the estate’s details."
+                : "Add the estate’s details. You can invite residents and guards afterwards."}
+            </p>
+          </div>
+          {editing && estate && (
+            <Link
+              href={`/companies/${companyId}/estates/${estate.id}/units`}
+              className="inline-flex h-11 items-center gap-2 rounded-control border border-line px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-surface-2"
+            >
+              <Home className="size-[18px]" aria-hidden />
+              Manage units
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className="flex max-w-[680px] flex-col gap-6">
