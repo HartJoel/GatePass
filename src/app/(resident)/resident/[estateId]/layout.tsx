@@ -3,16 +3,18 @@ import { ResidentShell } from '@/components/layout/resident-shell'
 import { ToastProvider } from '@/components/ui/toast'
 import { requireActor } from '@/server/authz/actor'
 import { getEstateForMember } from '@/server/services/estate.service'
+import { countUnreadNotifications } from '@/server/services/notification.service'
 
 export default async function ResidentLayout({ children, params }: LayoutProps<'/resident/[estateId]'>) {
   const { estateId } = await params
   const actor = await requireActor()
   const estate = await getEstateForMember(actor, estateId)
   if (!estate) notFound()
+  const unreadNotifications = await countUnreadNotifications(actor, estateId)
 
   return (
     <ToastProvider>
-      <ResidentShell estateId={estateId} estateName={estate.name}>
+      <ResidentShell estateId={estateId} estateName={estate.name} unreadNotifications={unreadNotifications}>
         {children}
       </ResidentShell>
     </ToastProvider>
