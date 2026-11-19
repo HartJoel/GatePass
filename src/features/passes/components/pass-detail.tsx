@@ -2,26 +2,28 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
 import { PassCard } from '@/features/passes/components/pass-card'
-import { usePassesData } from '@/features/passes/components/passes-data-provider'
+import { SharePass } from '@/features/passes/components/share-pass'
+import { revokePassAction } from '@/server/actions/pass.actions'
+import type { PassRow } from '@/server/services/pass.service'
 
-export function PassDetail({ passId }: { passId: string }) {
-  const { estateId } = useParams<{ estateId: string }>()
-  const { passes, revokePass } = usePassesData()
+export function PassDetail({ estateId, pass }: { estateId: string; pass: PassRow | null }) {
+  const router = useRouter()
   const toast = useToast()
-  const pass = passes.find((p) => p.id === passId)
   const [confirmRevoke, setConfirmRevoke] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const passesHref = `/resident/${estateId}/passes`
 
   if (!pass) {
     return (
       <>
-        <Link href={`/resident/${estateId}/passes`} className="-ml-1 mb-3 inline-flex items-center gap-0.5 rounded-sm text-sm font-medium text-ink-2 transition-colors hover:text-ink">
+        <Link href={passesHref} className="-ml-1 mb-3 inline-flex items-center gap-0.5 rounded-sm text-sm font-medium text-ink-2 transition-colors hover:text-ink">
           <ChevronLeft className="size-4" aria-hidden />
           Passes
         </Link>
@@ -35,10 +37,23 @@ export function PassDetail({ passId }: { passId: string }) {
 
   const revocable = pass.status === 'active'
 
+  async function onRevoke() {
+    setBusy(true)
+    const result = await revokePassAction(estateId, pass!.id)
+    setBusy(false)
+    setConfirmRevoke(false)
+    if (result.error) {
+      toast({ tone: 'danger', title: 'Couldn’t revoke pass', description: result.error.message })
+      return
+    }
+    toast({ tone: 'neutral', title: 'Pass revoked', description: pass!.visitor })
+    router.refresh()
+  }
+
   return (
     <>
       <header className="mb-6">
-        <Link href={`/resident/${estateId}/passes`} className="-ml-1 mb-3 inline-flex items-center gap-0.5 rounded-sm text-sm font-medium text-ink-2 transition-colors hover:text-ink">
+        <Link href={passesHref} className="-ml-1 mb-3 inline-flex items-center gap-0.5 rounded-sm text-sm font-medium text-ink-2 transition-colors hover:text-ink">
           <ChevronLeft className="size-4" aria-hidden />
           Passes
         </Link>
@@ -47,8 +62,10 @@ export function PassDetail({ passId }: { passId: string }) {
 
       <PassCard pass={pass} detail />
 
+      {pass.status !== 'revoked' && <SharePass pass={pass} />}
+
       {revocable && (
-        <Button variant="destructive-ghost" fullWidth className="mt-4" onClick={() => setConfirmRevoke(true)}>
+        <Button variant="destructive-ghost" fullWidth className="mt-4" disabled={busy} onClick={() => setConfirmRevoke(true)}>
           Revoke pass
         </Button>
       )}
@@ -60,18 +77,11 @@ export function PassDetail({ passId }: { passId: string }) {
         description={`${pass.visitor} will no longer be able to use this code at the gate. This can’t be undone.`}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setConfirmRevoke(false)}>
+            <Button variant="ghost" onClick={() => setConfirmRevoke(false)} disabled={busy}>
               Keep pass
             </Button>
-            <Button
-              variant="destructive-ghost"
-              onClick={() => {
-                revokePass(pass.id)
-                toast({ tone: 'neutral', title: 'Pass revoked', description: pass.visitor })
-                setConfirmRevoke(false)
-              }}
-            >
-              Revoke pass
+            <Button variant="destructive-ghost" disabled={busy} onClick={onRevoke}>
+              {busy ? 'Revoking…' : 'Revoke pass'}
             </Button>
           </>
         }

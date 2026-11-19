@@ -16,7 +16,6 @@ export interface Pass {
   start: Date
   end: Date
   status: Status
-  host?: string
 }
 
 /** Compact countdown. Caution (amber) only inside the last 15 minutes, always with text. */
@@ -48,7 +47,7 @@ export function PassCard({
 }: {
   pass: Pass
   onClick?: () => void
-  /** Detail view only: shows the QR code. */
+  /** Detail view only: shows the QR code and share code. */
   detail?: boolean
 }) {
   const Wrapper = onClick ? 'button' : 'div'
@@ -76,7 +75,7 @@ export function PassCard({
       {detail && (
         <div className="mt-2 flex flex-col items-center gap-3 border-t border-line pt-6">
           <QrCode value={pass.code} />
-          <p className="tnum text-[22px] font-semibold tracking-[0.18em] text-ink">{pass.code}</p>
+          <p className="tnum text-[28px] font-semibold tracking-[0.25em] text-ink">{pass.code}</p>
           <p className="type-caption text-ink-2">Show this code to the guard at the gate</p>
         </div>
       )}

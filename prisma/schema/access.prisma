@@ -27,7 +27,9 @@ model VisitorPass {
   issuerId        String
   visitorName     String
   note            String?
-  tokenHash       String     @unique
+  /// 6-digit numeric entry code, stored in plaintext by design so it can be reshared any time
+  /// (resident choice — see the gatepass-database skill's note on the one-time-token default).
+  code            String     @unique
   validFrom       DateTime
   expiresAt       DateTime
   status          PassStatus @default(ACTIVE)

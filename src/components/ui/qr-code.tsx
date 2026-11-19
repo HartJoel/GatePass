@@ -2,8 +2,9 @@
 
 import { useMemo } from 'react'
 
-/** Deterministic placeholder matrix. Not a scannable code: swap for a real QR encoder. */
-function matrix(seed: string, n = 25) {
+/** Deterministic placeholder matrix. Not a scannable code: swap for a real QR encoder. Exported
+ * so the shareable pass image (pass-image.ts) renders the identical pattern shown on screen. */
+export function qrMatrix(seed: string, n = 25) {
   let h = 2166136261
   for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619)
   const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ (h >>> 13)), (h >>> 0) / 4294967296)
@@ -30,7 +31,7 @@ function matrix(seed: string, n = 25) {
 
 /** Always dark-on-white, even in the guard theme, so cameras can read it. */
 export function QrCode({ value, size = 184 }: { value: string; size?: number }) {
-  const m = useMemo(() => matrix(value), [value])
+  const m = useMemo(() => qrMatrix(value), [value])
   return (
     <div className="inline-flex rounded-control bg-white p-3" style={{ width: size, height: size }}>
       <svg viewBox="0 0 25 25" className="size-full" shapeRendering="crispEdges" role="img" aria-label={`QR code for pass ${value}`}>

@@ -1,16 +1,11 @@
-'use client'
-
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 import { Plus, Ticket } from 'lucide-react'
 import { LinkButton } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PassCard } from '@/features/passes/components/pass-card'
-import { usePassesData } from '@/features/passes/components/passes-data-provider'
+import type { PassRow } from '@/server/services/pass.service'
 
-export function ResidentDashboard() {
-  const { estateId } = useParams<{ estateId: string }>()
-  const { residentName, passes } = usePassesData()
+export function ResidentDashboard({ estateId, residentName, passes }: { estateId: string; residentName: string; passes: PassRow[] }) {
   const active = passes.filter((p) => p.status === 'active').sort((a, b) => a.end.getTime() - b.end.getTime())
   const upcoming = active[0]
   const recent = passes.filter((p) => p.id !== upcoming?.id).slice(0, 3)

@@ -1,18 +1,11 @@
-'use client'
-
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 import { Plus, Ticket } from 'lucide-react'
 import { LinkButton } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PassCard } from '@/features/passes/components/pass-card'
-import { usePassesData } from '@/features/passes/components/passes-data-provider'
+import type { PassRow } from '@/server/services/pass.service'
 
-export function PassesList() {
-  const { estateId } = useParams<{ estateId: string }>()
-  const { passes } = usePassesData()
-  const sorted = [...passes].sort((a, b) => b.start.getTime() - a.start.getTime())
-
+export function PassesList({ estateId, passes }: { estateId: string; passes: PassRow[] }) {
   return (
     <>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
@@ -24,11 +17,11 @@ export function PassesList() {
       <LinkButton href={`/resident/${estateId}/passes/new`} className="mb-6 w-auto">
         <Plus className="size-[18px]" aria-hidden /> Create a visitor pass
       </LinkButton>
-      {sorted.length === 0 ? (
+      {passes.length === 0 ? (
         <EmptyState icon={Ticket} message="No passes yet. Create one for your first visitor." />
       ) : (
         <ul className="flex flex-col gap-3">
-          {sorted.map((p) => (
+          {passes.map((p) => (
             <li key={p.id}>
               <Link href={`/resident/${estateId}/passes/${p.id}`} className="block">
                 <PassCard pass={p} />
