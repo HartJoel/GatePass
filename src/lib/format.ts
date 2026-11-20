@@ -49,6 +49,11 @@ export function formatRemaining(ms: number): string {
   return `${s}s`
 }
 
+/** "12 Mar 2025" in Lagos time — used where a precise day matters more than relative time. */
+export function formatDate(d: Date): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' }).format(d)
+}
+
 export function formatAgo(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000))
   const d = Math.floor(s / 86400)

@@ -51,6 +51,8 @@ const ACTION_LABEL: Record<string, string> = {
   "estate.deactivated": "Deactivated estate",
   "estate.reactivated": "Reactivated estate",
   "pass.revoked": "Revoked visitor pass",
+  "company.suspended": "Suspended company",
+  "company.reactivated": "Reactivated company",
 };
 
 function targetFor(action: string, metadata: unknown): string {
@@ -65,6 +67,9 @@ function targetFor(action: string, metadata: unknown): string {
       return typeof m.estateName === "string" ? m.estateName : "—";
     case "pass.revoked":
       return [m.visitorName, m.unitLabel].filter(Boolean).join(" · ") || "—";
+    case "company.suspended":
+    case "company.reactivated":
+      return typeof m.companyName === "string" ? m.companyName : "—";
     default:
       return "—";
   }

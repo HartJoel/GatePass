@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { Sidebar } from '@/components/layout/navigation'
 import { platformNav } from '@/lib/constants/navigation'
-import { STAFF } from '@/features/platform/demo-data'
 import { signOutAction } from '@/server/actions/auth.actions'
 
 type Section = (typeof platformNav)[number]['id']
@@ -17,7 +16,7 @@ function sectionOf(pathname: string): Section {
 }
 
 /** Platform (super-admin) shell: sidebar + a tighter top bar than the company admin's. */
-export function PlatformShell({ children }: { children: ReactNode }) {
+export function PlatformShell({ adminName, children }: { adminName: string; children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const section = sectionOf(pathname)
@@ -31,9 +30,8 @@ export function PlatformShell({ children }: { children: ReactNode }) {
           <p className="text-[15px] font-semibold text-ink">GatePass Platform</p>
           <span className="rounded-full bg-neutral-bg px-2 py-0.5 text-xs font-semibold text-neutral-fg">Internal</span>
           <div className="ml-auto flex items-center gap-3">
-            {/* TODO(phase 5): read the signed-in platform admin from the session instead of a placeholder. */}
-            <Avatar name={STAFF.name} size="sm" />
-            <span className="hidden text-sm font-medium text-ink lg:block">{STAFF.name}</span>
+            <Avatar name={adminName} size="sm" />
+            <span className="hidden text-sm font-medium text-ink lg:block">{adminName}</span>
             <button
               type="button"
               aria-label="Sign out"

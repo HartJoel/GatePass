@@ -8,13 +8,12 @@ import { DataTable, type Column } from '@/components/data/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { SegmentedControl } from '@/components/ui/tabs'
-import { formatDate, type PlatformCompany } from '@/features/platform/demo-data'
-import { usePlatformData } from '@/features/platform/components/platform-data-provider'
+import { formatDate } from '@/lib/format'
+import type { PlatformCompanyRow } from '@/server/services/platform.service'
 
 type Filter = 'all' | 'active' | 'suspended'
 
-export function CompaniesTable() {
-  const { companies } = usePlatformData()
+export function CompaniesTable({ companies }: { companies: PlatformCompanyRow[] }) {
   const router = useRouter()
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
@@ -22,20 +21,19 @@ export function CompaniesTable() {
   const counts = useMemo(
     () => ({
       all: companies.length,
-      active: companies.filter((c) => c.status === 'active').length,
-      suspended: companies.filter((c) => c.status === 'suspended').length,
+      active: companies.filter((c) => c.status === 'ACTIVE').length,
+      suspended: companies.filter((c) => c.status === 'SUSPENDED').length,
     }),
     [companies],
   )
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
-    return companies
-      .filter((c) => filter === 'all' || c.status === filter)
-      .filter((c) => !s || c.name.toLowerCase().includes(s) || c.contactEmail.toLowerCase().includes(s) || c.contactName.toLowerCase().includes(s))
-      .sort((a, b) => b.createdAt - a.createdAt)
+    const statusFor: Record<Filter, PlatformCompanyRow['status'] | null> = { all: null, active: 'ACTIVE', suspended: 'SUSPENDED' }
+    const wanted = statusFor[filter]
+    return companies.filter((c) => (!wanted || c.status === wanted) && (!s || c.name.toLowerCase().includes(s) || (c.contactEmail ?? '').toLowerCase().includes(s)))
   }, [companies, q, filter])
 
-  const columns: Column<PlatformCompany>[] = [
+  const columns: Column<PlatformCompanyRow>[] = [
     {
       key: 'company',
       header: 'Company',
@@ -46,9 +44,9 @@ export function CompaniesTable() {
         </Link>
       ),
     },
-    { key: 'estates', header: 'Estates', align: 'right', width: '96px', cell: (c) => <span className="tnum">{c.estates.length}</span> },
-    { key: 'users', header: 'Users', align: 'right', width: '96px', cell: (c) => <span className="tnum">{c.users.toLocaleString('en-NG')}</span> },
-    { key: 'status', header: 'Status', width: '140px', cell: (c) => <StatusBadge status={c.status} size="sm" /> },
+    { key: 'estates', header: 'Estates', align: 'right', width: '96px', cell: (c) => <span className="tnum">{c.estateCount}</span> },
+    { key: 'users', header: 'Users', align: 'right', width: '96px', cell: (c) => <span className="tnum">{c.userCount.toLocaleString('en-NG')}</span> },
+    { key: 'status', header: 'Status', width: '140px', cell: (c) => <StatusBadge status={c.status === 'SUSPENDED' ? 'suspended' : 'active'} size="sm" /> },
     { key: 'created', header: 'Created', width: '140px', cell: (c) => <span className="tnum text-ink-2">{formatDate(c.createdAt)}</span> },
   ]
 

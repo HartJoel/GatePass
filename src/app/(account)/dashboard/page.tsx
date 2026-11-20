@@ -13,6 +13,9 @@ export default async function DashboardPage() {
   const { data: session } = await auth.getSession()
   if (!session?.user) redirect('/sign-in')
 
+  const platformAdmin = await db.platformAdmin.findUnique({ where: { userId: session.user.id } })
+  if (platformAdmin) redirect('/platform')
+
   const companyMembership = await db.companyMembership.findFirst({
     where: { userId: session.user.id },
     select: { companyId: true },

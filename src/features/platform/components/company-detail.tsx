@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Building2, ChevronLeft, PauseCircle, Play } from 'lucide-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -10,16 +11,17 @@ import { Modal } from '@/components/ui/overlay'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
-import { formatDate } from '@/features/platform/demo-data'
-import { usePlatformData } from '@/features/platform/components/platform-data-provider'
+import { formatDate } from '@/lib/format'
+import { reactivateCompanyAction, suspendCompanyAction } from '@/server/actions/platform.actions'
+import type { PlatformCompanyDetail } from '@/server/services/platform.service'
 
-export function CompanyDetail({ companyId }: { companyId: string }) {
-  const { companies, suspend, reactivate } = usePlatformData()
+export function CompanyDetail({ company }: { company: PlatformCompanyDetail | null }) {
+  const router = useRouter()
   const toast = useToast()
-  const company = companies.find((c) => c.id === companyId)
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   if (!company) {
     return (
@@ -36,8 +38,8 @@ export function CompanyDetail({ companyId }: { companyId: string }) {
     )
   }
 
-  const suspended = company.status === 'suspended'
-  const liveEstates = company.estates.filter((e) => e.status === 'active').length
+  const suspended = company.status === 'SUSPENDED'
+  const liveEstates = company.estates.filter((e) => e.status === 'ACTIVE').length
   const units = company.estates.reduce((n, e) => n + e.units, 0)
   const reasonError = submitted && !reason.trim() ? 'Enter a reason. It’s recorded against this company.' : undefined
 
@@ -46,53 +48,64 @@ export function CompanyDetail({ companyId }: { companyId: string }) {
     setReason('')
     setSubmitted(false)
   }
-  function confirm() {
+
+  async function confirmSuspend() {
     setSubmitted(true)
-    if (!reason.trim() || !company) return
-    suspend(company.id, reason)
-    toast({ tone: 'neutral', title: 'Company suspended', description: company.name })
+    if (!reason.trim()) return
+    setBusy(true)
+    const result = await suspendCompanyAction(company!.id, { reason })
+    setBusy(false)
+    if (result.error) {
+      toast({ tone: 'danger', title: 'Couldn’t suspend company', description: result.error.message })
+      return
+    }
+    toast({ tone: 'neutral', title: 'Company suspended', description: company!.name })
     close()
+    router.refresh()
+  }
+
+  async function doReactivate() {
+    setBusy(true)
+    const result = await reactivateCompanyAction(company!.id)
+    setBusy(false)
+    if (result.error) {
+      toast({ tone: 'danger', title: 'Couldn’t reactivate company', description: result.error.message })
+      return
+    }
+    toast({ tone: 'success', title: 'Company reactivated', description: `${company!.name} has access again.` })
+    router.refresh()
   }
 
   const rows: [string, string][] = [
     ['Primary contact', company.contactName],
-    ['Email', company.contactEmail],
-    ['Phone', `+234 ${company.phone}`],
-    ['City', company.city],
-    ['CAC number', company.rcNumber],
+    ['Email', company.contactEmail ?? 'Not provided'],
+    ['Phone', company.contactPhone ?? 'Not provided'],
     ['Created', formatDate(company.createdAt)],
   ]
 
   return (
     <>
+      <Link href="/platform/companies" className="-ml-1 mb-2 inline-flex items-center gap-0.5 rounded-sm text-sm font-medium text-ink-2 transition-colors hover:text-ink">
+        <ChevronLeft className="size-4" aria-hidden />
+        Companies
+      </Link>
       <header className="mb-6">
-        <Link href="/platform/companies" className="-ml-1 mb-2 inline-flex items-center gap-0.5 rounded-sm text-sm font-medium text-ink-2 transition-colors hover:text-ink">
-          <ChevronLeft className="size-4" aria-hidden />
-          Companies
-        </Link>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
               <h1 className="type-h1 truncate text-ink">{company.name}</h1>
-              <StatusBadge status={company.status} />
+              <StatusBadge status={suspended ? 'suspended' : 'active'} />
             </div>
             <p className="mt-1 text-sm text-ink-2">
-              {company.estates.length} {company.estates.length === 1 ? 'estate' : 'estates'} · {company.users.toLocaleString('en-NG')} {company.users === 1 ? 'user' : 'users'}
+              {company.estates.length} {company.estates.length === 1 ? 'estate' : 'estates'} · {company.userCount.toLocaleString('en-NG')} {company.userCount === 1 ? 'user' : 'users'}
             </p>
           </div>
           {suspended ? (
-            <Button
-              variant="filled"
-              icon={<Play />}
-              onClick={() => {
-                reactivate(company.id)
-                toast({ tone: 'success', title: 'Company reactivated', description: `${company.name} has access again.` })
-              }}
-            >
-              Reactivate
+            <Button variant="filled" icon={<Play />} onClick={doReactivate} disabled={busy}>
+              {busy ? 'Reactivating…' : 'Reactivate'}
             </Button>
           ) : (
-            <Button variant="destructive-ghost" icon={<PauseCircle />} onClick={() => setOpen(true)}>
+            <Button variant="destructive-ghost" icon={<PauseCircle />} onClick={() => setOpen(true)} disabled={busy}>
               Suspend company
             </Button>
           )}
@@ -132,7 +145,7 @@ export function CompanyDetail({ companyId }: { companyId: string }) {
               [
                 ['Estates', company.estates.length],
                 ['Units', units],
-                ['Users', company.users],
+                ['Users', company.userCount],
               ] as const
             ).map(([k, v]) => (
               <div key={k} className="px-3 py-3">
@@ -146,7 +159,11 @@ export function CompanyDetail({ companyId }: { companyId: string }) {
         <section className="rounded-card border border-line bg-surface">
           <div className="border-b border-line px-6 py-4">
             <h2 className="type-h3">Estates</h2>
-            {company.estates.length > 0 && <p className="mt-0.5 text-sm text-ink-2">{liveEstates} of {company.estates.length} active</p>}
+            {company.estates.length > 0 && (
+              <p className="mt-0.5 text-sm text-ink-2">
+                {liveEstates} of {company.estates.length} active
+              </p>
+            )}
           </div>
           {company.estates.length === 0 ? (
             <EmptyState icon={Building2} message="No estates registered yet. This company signed up recently." className="py-10" />
@@ -156,11 +173,11 @@ export function CompanyDetail({ companyId }: { companyId: string }) {
                 <li key={e.id} className="flex items-center gap-4 px-6 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-medium text-ink">{e.name}</p>
-                    <p className="text-[13px] text-ink-2">{e.city}</p>
+                    <p className="text-[13px] text-ink-2">{e.city ?? 'City not set'}</p>
                   </div>
                   <span className="tnum w-24 shrink-0 text-right text-sm text-ink-2">{e.units ? `${e.units} units` : 'Units not set'}</span>
                   <span className="flex w-28 shrink-0 justify-end">
-                    <StatusBadge status={e.status} size="sm" />
+                    <StatusBadge status={e.status === 'DEACTIVATED' ? 'deactivated' : 'active'} size="sm" />
                   </span>
                 </li>
               ))}
@@ -176,11 +193,11 @@ export function CompanyDetail({ companyId }: { companyId: string }) {
         description={`Residents, guards and managers at all ${company.estates.length} ${company.estates.length === 1 ? 'estate' : 'estates'} lose access straight away and visitor passes stop working at the gate. Nothing is deleted, and you can reactivate at any time.`}
         footer={
           <>
-            <Button variant="ghost" onClick={close}>
+            <Button variant="ghost" onClick={close} disabled={busy}>
               Cancel
             </Button>
-            <Button variant="destructive-ghost" onClick={confirm}>
-              Suspend company
+            <Button variant="destructive-ghost" onClick={confirmSuspend} disabled={busy}>
+              {busy ? 'Suspending…' : 'Suspend company'}
             </Button>
           </>
         }

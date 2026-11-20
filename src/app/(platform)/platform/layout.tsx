@@ -1,13 +1,17 @@
+import { notFound } from 'next/navigation'
 import { PlatformShell } from '@/components/layout/platform-shell'
 import { ToastProvider } from '@/components/ui/toast'
-import { PlatformDataProvider } from '@/features/platform/components/platform-data-provider'
+import { auth } from '@/server/auth/auth'
+import { requireActor } from '@/server/authz/actor'
 
-export default function PlatformLayout({ children }: LayoutProps<'/platform'>) {
+export default async function PlatformLayout({ children }: LayoutProps<'/platform'>) {
+  const actor = await requireActor()
+  if (!actor.isPlatformAdmin) notFound()
+  const { data: session } = await auth.getSession()
+
   return (
-    <PlatformDataProvider>
-      <ToastProvider>
-        <PlatformShell>{children}</PlatformShell>
-      </ToastProvider>
-    </PlatformDataProvider>
+    <ToastProvider>
+      <PlatformShell adminName={session?.user.name ?? 'Platform admin'}>{children}</PlatformShell>
+    </ToastProvider>
   )
 }
