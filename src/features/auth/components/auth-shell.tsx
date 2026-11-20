@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react'
+import { Eye, EyeOff, type LucideIcon } from 'lucide-react'
 import { Logo } from '@/components/layout/navigation'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { Field, type FieldProps } from '@/components/ui/field'
@@ -105,17 +105,9 @@ export function SubmitButton({
   children,
   type = 'submit',
   ...rest
-}: { busy?: boolean; busyLabel: string } & Omit<ButtonProps, 'variant' | 'fullWidth' | 'icon'>) {
+}: { busy?: boolean; busyLabel: string } & Omit<ButtonProps, 'variant' | 'fullWidth' | 'icon' | 'loading'>) {
   return (
-    <Button
-      type={type}
-      variant="filled"
-      fullWidth
-      aria-busy={busy}
-      icon={busy ? <Loader2 className="animate-spin" aria-hidden /> : undefined}
-      {...rest}
-      disabled={busy || rest.disabled}
-    >
+    <Button type={type} variant="filled" fullWidth loading={busy} {...rest}>
       {busy ? busyLabel : children}
     </Button>
   )

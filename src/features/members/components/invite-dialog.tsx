@@ -116,7 +116,7 @@ function InviteDialogBody({ onClose, companyId, estates }: { onClose: () => void
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="filled" type="submit" form="invite-form" disabled={busy}>
+          <Button variant="filled" type="submit" form="invite-form" loading={busy}>
             {busy ? 'Creating…' : 'Create invite'}
           </Button>
         </>

@@ -73,7 +73,7 @@ export function SharePass({ pass }: { pass: Pass }) {
 
   return (
     <div className="mt-4 flex flex-wrap gap-2">
-      <Button variant="filled" icon={<Share2 className="size-4" />} onClick={share} disabled={busy} className="min-w-[140px] flex-1">
+      <Button variant="filled" icon={<Share2 className="size-4" />} onClick={share} loading={busy} className="min-w-[140px] flex-1">
         {busy ? 'Preparing…' : 'Share'}
       </Button>
       <Button variant="ghost" icon={<Download className="size-4" />} onClick={download}>

@@ -193,7 +193,7 @@ export function EstateForm({
             </div>
 
             <div className="flex items-center gap-3 border-t border-line px-6 py-4">
-              <Button type="submit" variant="filled" disabled={busy}>
+              <Button type="submit" variant="filled" loading={busy}>
                 {busy ? "Saving…" : "Save estate"}
               </Button>
               <Button
@@ -219,7 +219,7 @@ export function EstateForm({
                 </p>
               </div>
               {off ? (
-                <Button variant="ghost" icon={<Power />} disabled={statusBusy} onClick={() => onToggleStatus("ACTIVE")}>
+                <Button variant="ghost" icon={<Power />} loading={statusBusy} onClick={() => onToggleStatus("ACTIVE")}>
                   {statusBusy ? "Reactivating…" : "Reactivate estate"}
                 </Button>
               ) : (
@@ -243,7 +243,7 @@ export function EstateForm({
               <Button variant="ghost" onClick={() => setConfirmOff(false)} disabled={statusBusy}>
                 Keep estate active
               </Button>
-              <Button variant="destructive-ghost" disabled={statusBusy} onClick={() => onToggleStatus("DEACTIVATED")}>
+              <Button variant="destructive-ghost" loading={statusBusy} onClick={() => onToggleStatus("DEACTIVATED")}>
                 {statusBusy ? "Deactivating…" : "Deactivate estate"}
               </Button>
             </>

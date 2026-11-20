@@ -105,7 +105,7 @@ export function GateVerify() {
           onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
           className="[&_input]:tnum [&_input]:tracking-[0.3em]"
         />
-        <Button type="submit" variant="filled" size="large" fullWidth disabled={!code.trim() || busy}>
+        <Button type="submit" variant="filled" size="large" fullWidth disabled={!code.trim()} loading={busy}>
           {busy ? 'Checking…' : 'Verify'}
         </Button>
       </form>
@@ -174,7 +174,7 @@ export function GateVerify() {
         <p className="tnum mt-2 text-sm text-ink-2">{formatWindow(pass.validFrom, pass.expiresAt)}</p>
         {pass.note && <p className="mt-2 text-[15px] text-ink-2">{pass.note}</p>}
       </div>
-      <DecisionPair onApprove={() => decide('APPROVE')} onReject={() => decide('REJECT')} disabled={busy} />
+      <DecisionPair onApprove={() => decide('APPROVE')} onReject={() => decide('REJECT')} loading={busy} />
       <button type="button" onClick={reset} className="text-sm font-medium text-ink-2 underline-offset-4 hover:text-ink hover:underline">
         Cancel
       </button>

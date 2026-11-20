@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import Link from 'next/link'
-import { Check, X } from 'lucide-react'
+import { Check, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -15,6 +15,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size
   icon?: ReactNode
   fullWidth?: boolean
+  /** Shows a spinner in place of `icon` and disables the button while an action is in flight. */
+  loading?: boolean
 }
 
 const base =
@@ -32,14 +34,16 @@ const sizes: Record<Size, string> = {
   large: 'h-[60px] px-7 text-xl [&_svg]:size-6 rounded-[14px]',
 }
 
-export function Button({ variant = 'ghost', size = 'default', icon, fullWidth, className, children, ...rest }: ButtonProps) {
+export function Button({ variant = 'ghost', size = 'default', icon, fullWidth, loading, disabled, className, children, ...rest }: ButtonProps) {
   return (
     <button
       type="button"
-      className={cn(base, variants[variant], sizes[size], fullWidth && 'w-full', className)}
       {...rest}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={cn(base, variants[variant], sizes[size], fullWidth && 'w-full', className)}
     >
-      {icon}
+      {loading ? <Loader2 className="animate-spin" aria-hidden /> : icon}
       {children}
     </button>
   )
@@ -69,21 +73,23 @@ export function DecisionPair({
   onApprove,
   onReject,
   disabled,
+  loading,
 }: {
   onApprove?: () => void
   onReject?: () => void
   disabled?: boolean
+  loading?: boolean
 }) {
   const shared =
     'inline-flex h-16 flex-1 items-center justify-center gap-3 rounded-[14px] text-[22px] font-semibold text-on-solid transition-[filter] duration-150 ease-calm hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:hover:brightness-100'
   return (
     <div className="grid grid-cols-2 gap-3">
-      <button type="button" disabled={disabled} onClick={onReject} className={cn(shared, 'bg-danger')}>
-        <X className="size-7" strokeWidth={2.5} />
+      <button type="button" disabled={disabled || loading} aria-busy={loading || undefined} onClick={onReject} className={cn(shared, 'bg-danger')}>
+        {loading ? <Loader2 className="size-7 animate-spin" aria-hidden /> : <X className="size-7" strokeWidth={2.5} aria-hidden />}
         Reject
       </button>
-      <button type="button" disabled={disabled} onClick={onApprove} className={cn(shared, 'bg-success')}>
-        <Check className="size-7" strokeWidth={2.5} />
+      <button type="button" disabled={disabled || loading} aria-busy={loading || undefined} onClick={onApprove} className={cn(shared, 'bg-success')}>
+        {loading ? <Loader2 className="size-7 animate-spin" aria-hidden /> : <Check className="size-7" strokeWidth={2.5} aria-hidden />}
         Approve
       </button>
     </div>

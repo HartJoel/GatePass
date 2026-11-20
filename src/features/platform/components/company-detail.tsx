@@ -101,7 +101,7 @@ export function CompanyDetail({ company }: { company: PlatformCompanyDetail | nu
             </p>
           </div>
           {suspended ? (
-            <Button variant="filled" icon={<Play />} onClick={doReactivate} disabled={busy}>
+            <Button variant="filled" icon={<Play />} onClick={doReactivate} loading={busy}>
               {busy ? 'Reactivating…' : 'Reactivate'}
             </Button>
           ) : (
@@ -196,7 +196,7 @@ export function CompanyDetail({ company }: { company: PlatformCompanyDetail | nu
             <Button variant="ghost" onClick={close} disabled={busy}>
               Cancel
             </Button>
-            <Button variant="destructive-ghost" onClick={confirmSuspend} disabled={busy}>
+            <Button variant="destructive-ghost" onClick={confirmSuspend} loading={busy}>
               {busy ? 'Suspending…' : 'Suspend company'}
             </Button>
           </>

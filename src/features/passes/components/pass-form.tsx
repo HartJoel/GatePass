@@ -99,7 +99,7 @@ export function PassForm({ estateId, units }: { estateId: string; units: { id: s
           ))}
         </Select>
         <Textarea label="Note for the guard (optional)" placeholder="e.g. Grey Camry, plate KJA 204 XB" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-        <Button type="submit" variant="filled" className="mt-2" disabled={busy}>
+        <Button type="submit" variant="filled" className="mt-2" loading={busy}>
           {busy ? 'Saving…' : 'Save and get code'}
         </Button>
       </form>

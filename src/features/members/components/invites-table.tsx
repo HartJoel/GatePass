@@ -38,6 +38,7 @@ function expiresIn(ms: number) {
 export function InvitesTable({ companyId, invites, estates }: { companyId: string; invites: InviteRow[]; estates: { id: string; name: string }[] }) {
   const toast = useToast()
   const [cancelling, setCancelling] = useState<InviteRow | null>(null)
+  const [cancelBusy, setCancelBusy] = useState(false)
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -86,12 +87,12 @@ export function InvitesTable({ companyId, invites, estates }: { companyId: strin
             variant="ghost"
             className="!h-9 !px-3 !text-sm"
             aria-label={`Resend invite to ${i.email}`}
-            disabled={resendingId === i.id}
+            loading={resendingId === i.id}
             onClick={() => resend(i)}
           >
             {resendingId === i.id ? 'Resending…' : 'Resend'}
           </Button>
-          <Button variant="destructive-ghost" className="!h-9 !px-3 !text-sm" aria-label={`Cancel invite for ${i.email}`} onClick={() => setCancelling(i)}>
+          <Button variant="destructive-ghost" className="!h-9 !px-3 !text-sm" aria-label={`Cancel invite for ${i.email}`} disabled={resendingId === i.id} onClick={() => setCancelling(i)}>
             Cancel
           </Button>
         </div>
@@ -136,15 +137,18 @@ export function InvitesTable({ companyId, invites, estates }: { companyId: strin
         description={cancelling ? `The link shared with ${cancelling.email} will stop working. You can invite them again later.` : undefined}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setCancelling(null)}>
+            <Button variant="ghost" disabled={cancelBusy} onClick={() => setCancelling(null)}>
               Keep invite
             </Button>
             <Button
               variant="destructive-ghost"
+              loading={cancelBusy}
               onClick={async () => {
                 if (!cancelling) return
                 const target = cancelling
+                setCancelBusy(true)
                 const result = await cancelInvitationAction(companyId, target.id)
+                setCancelBusy(false)
                 if (result.error) {
                   toast({ tone: 'danger', title: 'Couldn’t cancel invite', description: result.error.message })
                   return
@@ -153,7 +157,7 @@ export function InvitesTable({ companyId, invites, estates }: { companyId: strin
                 setCancelling(null)
               }}
             >
-              Cancel invite
+              {cancelBusy ? 'Cancelling…' : 'Cancel invite'}
             </Button>
           </>
         }

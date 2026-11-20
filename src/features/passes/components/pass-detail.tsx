@@ -80,7 +80,7 @@ export function PassDetail({ estateId, pass }: { estateId: string; pass: PassRow
             <Button variant="ghost" onClick={() => setConfirmRevoke(false)} disabled={busy}>
               Keep pass
             </Button>
-            <Button variant="destructive-ghost" disabled={busy} onClick={onRevoke}>
+            <Button variant="destructive-ghost" loading={busy} onClick={onRevoke}>
               {busy ? 'Revoking…' : 'Revoke pass'}
             </Button>
           </>

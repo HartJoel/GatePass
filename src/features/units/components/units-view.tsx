@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Home, UserPlus, X } from 'lucide-react'
+import { ChevronLeft, Home, Loader2, UserPlus, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -134,11 +134,16 @@ function UnitCard({
               <button
                 type="button"
                 aria-label={`Remove ${r.name} from ${unit.label}`}
+                aria-busy={removingId === r.membershipId || undefined}
                 disabled={removingId === r.membershipId}
                 onClick={() => remove(r)}
                 className="rounded-control p-1.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-danger disabled:opacity-45"
               >
-                <X className="size-4" aria-hidden />
+                {removingId === r.membershipId ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <X className="size-4" aria-hidden />
+                )}
               </button>
             </li>
           ))}
@@ -187,7 +192,7 @@ function AddUnitModal({ open, onClose, companyId, estateId }: { open: boolean; o
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="filled" type="submit" form="add-unit-form" disabled={busy}>
+          <Button variant="filled" type="submit" form="add-unit-form" loading={busy}>
             {busy ? 'Adding…' : 'Add unit'}
           </Button>
         </>
@@ -250,7 +255,7 @@ function AssignResidentModal({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="filled" type="submit" form="assign-resident-form" disabled={busy}>
+          <Button variant="filled" type="submit" form="assign-resident-form" loading={busy}>
             {busy ? 'Assigning…' : 'Assign'}
           </Button>
         </>
