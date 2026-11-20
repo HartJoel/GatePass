@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/server/db/client";
 import { authorizeCompany, authorizeEstate } from "@/server/authz/policies";
+import { recordAudit } from "@/server/services/audit.service";
 import type { Actor } from "@/server/authz/actor";
 import type { SaveEstateInput } from "@/lib/validation/estate.schema";
 import type { EstateStatus } from "@/generated/prisma/enums";
@@ -56,9 +57,22 @@ export async function updateEstate(
 }
 
 export async function setEstateStatus(actor: Actor, estateId: string, status: EstateStatus) {
-  authorizeEstate(actor, estateId, "manage_estate");
+  const access = authorizeEstate(actor, estateId, "manage_estate");
 
-  return db.estate.update({ where: { id: estateId }, data: { status } });
+  return db.$transaction(async (tx) => {
+    const estate = await tx.estate.update({ where: { id: estateId }, data: { status } });
+
+    await recordAudit(tx, actor.userId, {
+      companyId: access.companyId,
+      estateId,
+      action: status === "DEACTIVATED" ? "estate.deactivated" : "estate.reactivated",
+      entityType: "Estate",
+      entityId: estateId,
+      metadata: { estateName: estate.name },
+    });
+
+    return estate;
+  });
 }
 
 /** For the resident/guard shells: any active member of the estate (not just managers) may load

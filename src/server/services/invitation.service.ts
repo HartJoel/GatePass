@@ -3,6 +3,7 @@ import { db } from "@/server/db/client";
 import { auth } from "@/server/auth/auth";
 import { authorizeCompany, authorizeEstate } from "@/server/authz/policies";
 import { AppError } from "@/server/errors/app-error";
+import { recordAudit } from "@/server/services/audit.service";
 import {
   generateInviteToken,
   hashInviteToken,
@@ -89,16 +90,29 @@ export async function inviteMember(
     );
 
   const { token, tokenHash } = generateInviteToken();
-  const invitation = await db.invitation.create({
-    data: {
+  const invitation = await db.$transaction(async (tx) => {
+    const invitation = await tx.invitation.create({
+      data: {
+        companyId,
+        estateId,
+        email,
+        role: input.role,
+        tokenHash,
+        expiresAt: new Date(Date.now() + INVITE_VALID_DAYS * DAY_MS),
+        invitedByUserId: actor.userId,
+      },
+    });
+
+    await recordAudit(tx, actor.userId, {
       companyId,
-      estateId,
-      email,
-      role: input.role,
-      tokenHash,
-      expiresAt: new Date(Date.now() + INVITE_VALID_DAYS * DAY_MS),
-      invitedByUserId: actor.userId,
-    },
+      estateId: estateId ?? undefined,
+      action: "invite.created",
+      entityType: "Invitation",
+      entityId: invitation.id,
+      metadata: { email, role: ROLE_LABEL[input.role] },
+    });
+
+    return invitation;
   });
 
   return { invitationId: invitation.id, token, expiresAt: invitation.expiresAt };
@@ -159,9 +173,22 @@ export async function revokeInvitation(
     throw new AppError("CONFLICT", "This invite has already been accepted.");
   if (invitation.revokedAt) return invitation;
 
-  return db.invitation.update({
-    where: { id: invitationId },
-    data: { revokedAt: new Date() },
+  return db.$transaction(async (tx) => {
+    const updated = await tx.invitation.update({
+      where: { id: invitationId },
+      data: { revokedAt: new Date() },
+    });
+
+    await recordAudit(tx, actor.userId, {
+      companyId,
+      estateId: invitation.estateId ?? undefined,
+      action: "invite.revoked",
+      entityType: "Invitation",
+      entityId: invitationId,
+      metadata: { email: invitation.email, role: ROLE_LABEL[invitation.role] },
+    });
+
+    return updated;
   });
 }
 
@@ -273,6 +300,15 @@ export async function acceptInvitation(input: AcceptInvitationInput) {
     await tx.invitation.update({
       where: { id: invitation.id },
       data: { acceptedAt: new Date() },
+    });
+
+    await recordAudit(tx, userId, {
+      companyId: invitation.companyId,
+      estateId: invitation.estateId ?? undefined,
+      action: "invite.accepted",
+      entityType: "Invitation",
+      entityId: invitation.id,
+      metadata: { email: invitation.email, role: ROLE_LABEL[invitation.role] },
     });
   });
 

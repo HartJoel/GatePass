@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
 import { AuditLogView } from '@/features/audit/components/audit-log-view'
-import { DEMO_AUDIT_ENTRIES } from '@/features/access-log/demo-data'
+import { requireActor } from '@/server/authz/actor'
+import { listAuditLog } from '@/server/services/audit.service'
 
 export const metadata: Metadata = { title: 'Audit log · GatePass' }
+export const dynamic = 'force-dynamic'
 
-export default function AuditLogPage() {
-  // TODO(phase 5, slice H): load via the audit service, scoped to this company.
-  return <AuditLogView entries={DEMO_AUDIT_ENTRIES} />
+export default async function AuditLogPage({ params }: PageProps<'/companies/[companyId]/audit-log'>) {
+  const { companyId } = await params
+  const actor = await requireActor()
+  const entries = await listAuditLog(actor, companyId)
+  return <AuditLogView entries={entries} />
 }

@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db/client";
 import { authorizeEstate } from "@/server/authz/policies";
 import { AppError } from "@/server/errors/app-error";
+import { recordAudit } from "@/server/services/audit.service";
 import { derivePassStatus, generatePassCode } from "@/server/domain/pass-token";
 import type { Actor } from "@/server/authz/actor";
 import type { CreatePassInput } from "@/lib/validation/pass.schema";
@@ -162,21 +163,32 @@ export async function revokePass(
 
   const pass = await db.visitorPass.findUnique({
     where: { id_estateId: { id: passId, estateId } },
-    select: { id: true, issuerId: true },
+    select: { id: true, issuerId: true, visitorName: true, unit: { select: { label: true } } },
   });
   if (!pass || pass.issuerId !== access.membershipId)
     throw new AppError("NOT_FOUND", "Not found.");
 
-  const result = await db.visitorPass.updateMany({
-    where: { id: pass.id, estateId, status: "ACTIVE" },
-    data: {
-      status: "REVOKED",
-      revokedAt: new Date(),
-      revokedByUserId: actor.userId,
-    },
-  });
-  if (result.count === 0)
-    throw new AppError("CONFLICT", "This pass can no longer be revoked.");
+  return db.$transaction(async (tx) => {
+    const result = await tx.visitorPass.updateMany({
+      where: { id: pass.id, estateId, status: "ACTIVE" },
+      data: {
+        status: "REVOKED",
+        revokedAt: new Date(),
+        revokedByUserId: actor.userId,
+      },
+    });
+    if (result.count === 0)
+      throw new AppError("CONFLICT", "This pass can no longer be revoked.");
 
-  return { passId: pass.id };
+    await recordAudit(tx, actor.userId, {
+      companyId: access.companyId,
+      estateId,
+      action: "pass.revoked",
+      entityType: "VisitorPass",
+      entityId: pass.id,
+      metadata: { visitorName: pass.visitorName, unitLabel: pass.unit.label },
+    });
+
+    return { passId: pass.id };
+  });
 }

@@ -5,17 +5,16 @@ import { DataTable, type Column } from '@/components/data/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatAgo } from '@/lib/format'
 import { nowMs } from '@/lib/utils'
-import type { AuditEntry } from '@/features/access-log/demo-data'
+import type { AuditLogRow } from '@/server/services/audit.service'
 
-export function AuditLogView({ entries }: { entries: AuditEntry[] }) {
+export function AuditLogView({ entries }: { entries: AuditLogRow[] }) {
   const now = nowMs()
-  const rows = [...entries].sort((a, b) => b.at - a.at)
 
-  const columns: Column<AuditEntry>[] = [
+  const columns: Column<AuditLogRow>[] = [
     { key: 'actor', header: 'Who', skeleton: 'w-32', cell: (e) => <span className="font-semibold text-ink">{e.actor}</span> },
     { key: 'action', header: 'Action', cell: (e) => <span className="text-ink">{e.action}</span> },
     { key: 'target', header: 'Target', skeleton: 'w-48', cell: (e) => <span className="text-ink-2">{e.target}</span> },
-    { key: 'at', header: 'When', align: 'right', width: '120px', cell: (e) => <span className="tnum text-ink-2">{formatAgo(now - e.at)}</span> },
+    { key: 'at', header: 'When', align: 'right', width: '120px', cell: (e) => <span className="tnum text-ink-2">{formatAgo(now - e.at.getTime())}</span> },
   ]
 
   return (
@@ -27,7 +26,7 @@ export function AuditLogView({ entries }: { entries: AuditEntry[] }) {
       <DataTable
         label="Audit log"
         columns={columns}
-        rows={rows}
+        rows={entries}
         density="compact"
         selectable={false}
         pageSize={12}
