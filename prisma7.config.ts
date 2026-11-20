@@ -9,7 +9,7 @@ export default defineConfig({
   },
   datasource: {
     // CLI commands (migrate, db push, introspect) use the direct/unpooled connection.
-    // The app itself connects through the pooled DATABASE_URL via the Neon adapter at runtime.
+    // The app itself connects through the pooled DATABASE_URL via a plain pg Pool at runtime.
     url: env('DATABASE_URL_UNPOOLED'),
   },
 })
