@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { BottomTabs, SignOutButton } from "@/components/layout/navigation";
+import { PageTransition } from "@/components/layout/page-transition";
 import { residentNav } from "@/lib/constants/navigation";
 
 type Section = (typeof residentNav)[number]["id"];
@@ -49,7 +50,9 @@ export function ResidentShell({
         <SignOutButton className="ml-auto p-2.5" />
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto max-w-[560px] px-4 pb-8 pt-6">{children}</div>
+        <div className="mx-auto max-w-[560px] px-4 pb-8 pt-6">
+          <PageTransition>{children}</PageTransition>
+        </div>
       </main>
       <BottomTabs
         items={residentNav}

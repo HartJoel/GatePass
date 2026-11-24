@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { BottomTabs, Sidebar, SignOutButton } from '@/components/layout/navigation'
+import { PageTransition } from '@/components/layout/page-transition'
 import { platformNav } from '@/lib/constants/navigation'
 
 type Section = (typeof platformNav)[number]['id']
@@ -37,7 +38,9 @@ export function PlatformShell({ adminName, children }: { adminName: string; chil
           </div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto max-w-[1180px] px-4 pb-10 pt-6 md:px-8 md:pb-16 md:pt-8">{children}</div>
+          <div className="mx-auto max-w-[1180px] px-4 pb-10 pt-6 md:px-8 md:pb-16 md:pt-8">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
         <BottomTabs className="md:hidden" items={platformNav} active={section} onSelect={goTo} />
       </div>

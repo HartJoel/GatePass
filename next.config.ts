@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     agentFeedback: true,
+    optimizePackageImports: ["motion"],
   },
   // Cache Components defaults every route to static and requires each dynamic data
   // access (params, session, tenant queries) to opt in via Suspense/"use cache"/instant.

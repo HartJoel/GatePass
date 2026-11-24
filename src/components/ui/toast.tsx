@@ -2,8 +2,10 @@
 
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import { AlertTriangle, Ban, CheckCircle2, Info, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMotionPresets } from '@/lib/motion'
 import { useTheme } from '@/components/providers/theme'
 
 type ToastTone = 'success' | 'danger' | 'warning' | 'neutral'
@@ -27,7 +29,7 @@ export function Toast({ tone, title, description, onClose, className }: ToastDat
   return (
     <div
       role={tone === 'danger' ? 'alert' : 'status'}
-      className={cn('anim-rise flex w-full max-w-sm items-start gap-3 rounded-card border border-field/60 bg-surface p-4', className)}
+      className={cn('flex w-full max-w-sm items-start gap-3 rounded-card border border-field/60 bg-surface p-4', className)}
     >
       <Icon className={cn('mt-0.5 size-5 shrink-0', iconColor[tone])} aria-hidden />
       <div className="min-w-0 flex-1">
@@ -50,6 +52,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<(ToastData & { id: number })[]>([])
   const seq = useRef(0)
   const theme = useTheme()
+  const { rise } = useMotionPresets()
   const dismiss = useCallback((id: number) => setItems((l) => l.filter((x) => x.id !== id)), [])
   const push = useCallback(
     (t: ToastData) => {
@@ -65,11 +68,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {typeof document !== 'undefined' &&
         createPortal(
           <div data-theme={theme} className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 sm:items-end sm:p-6">
-            {items.map((t) => (
-              <div key={t.id} className="pointer-events-auto w-full max-w-sm">
-                <Toast {...t} onClose={() => dismiss(t.id)} />
-              </div>
-            ))}
+            <AnimatePresence>
+              {items.map((t) => (
+                <motion.div
+                  key={t.id}
+                  layout
+                  variants={rise}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="pointer-events-auto w-full max-w-sm"
+                >
+                  <Toast {...t} onClose={() => dismiss(t.id)} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>,
           document.body,
         )}

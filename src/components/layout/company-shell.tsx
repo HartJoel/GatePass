@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { BottomTabs, Sidebar, SignOutButton } from '@/components/layout/navigation'
+import { PageTransition } from '@/components/layout/page-transition'
 import { companyNav } from '@/lib/constants/navigation'
 import { useCompanyData } from '@/features/companies/components/company-data-provider'
 
@@ -48,7 +49,9 @@ export function CompanyShell({ companyId, children }: { companyId: string; child
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto max-w-[1120px] px-4 pb-10 pt-6 md:px-8 md:pb-20 md:pt-10">{children}</div>
+          <div className="mx-auto max-w-[1120px] px-4 pb-10 pt-6 md:px-8 md:pb-20 md:pt-10">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
 
         <BottomTabs className="md:hidden" items={companyNav} active={section} onSelect={goTo} />

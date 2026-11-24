@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { BottomTabs, SignOutButton } from '@/components/layout/navigation'
+import { PageTransition } from '@/components/layout/page-transition'
 import { guardNav } from '@/lib/constants/navigation'
 
 type Section = (typeof guardNav)[number]['id']
@@ -28,7 +29,9 @@ export function GuardShell({ estateId, estateName, children }: { estateId: strin
         <SignOutButton className="ml-auto p-2.5" />
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto max-w-[560px] px-4 pb-8 pt-6">{children}</div>
+        <div className="mx-auto max-w-[560px] px-4 pb-8 pt-6">
+          <PageTransition>{children}</PageTransition>
+        </div>
       </main>
       <BottomTabs items={guardNav} active={section} onSelect={(id) => go(id as Section)} />
     </div>
