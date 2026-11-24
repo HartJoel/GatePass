@@ -4,7 +4,7 @@ import { Building2, LogOut } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
-import { Sidebar } from '@/components/layout/navigation'
+import { BottomTabs, Sidebar } from '@/components/layout/navigation'
 import { companyNav } from '@/lib/constants/navigation'
 import { useCompanyData } from '@/features/companies/components/company-data-provider'
 import { signOutAction } from '@/server/actions/auth.actions'
@@ -24,16 +24,14 @@ export function CompanyShell({ companyId, children }: { companyId: string; child
   const section = sectionOf(pathname, companyId)
   const { company } = useCompanyData()
 
+  const goTo = (id: string) => router.push(id === 'overview' ? `/companies/${companyId}` : `/companies/${companyId}/${id}`)
+
   return (
-    <div data-theme="light" className="flex h-screen bg-bg text-ink">
-      <Sidebar
-        items={companyNav}
-        active={section}
-        onSelect={(id) => router.push(id === 'overview' ? `/companies/${companyId}` : `/companies/${companyId}/${id}`)}
-      />
+    <div data-theme="light" className="flex h-dvh overflow-hidden bg-bg text-ink">
+      <Sidebar className="hidden md:flex" items={companyNav} active={section} onSelect={goTo} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-8">
-          <span className="flex size-9 items-center justify-center rounded-control bg-accent-soft text-accent">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 md:h-16 md:px-8">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent">
             <Building2 className="size-[18px]" aria-hidden />
           </span>
           <div className="min-w-0 leading-tight">
@@ -58,9 +56,11 @@ export function CompanyShell({ companyId, children }: { companyId: string; child
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[1120px] px-8 pb-20 pt-10">{children}</div>
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto max-w-[1120px] px-4 pb-10 pt-6 md:px-8 md:pb-20 md:pt-10">{children}</div>
         </main>
+
+        <BottomTabs className="md:hidden" items={companyNav} active={section} onSelect={goTo} />
       </div>
     </div>
   )

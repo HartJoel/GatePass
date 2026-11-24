@@ -4,7 +4,7 @@ import { LogOut, ShieldCheck } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
-import { Sidebar } from '@/components/layout/navigation'
+import { BottomTabs, Sidebar } from '@/components/layout/navigation'
 import { platformNav } from '@/lib/constants/navigation'
 import { signOutAction } from '@/server/actions/auth.actions'
 
@@ -21,14 +21,16 @@ export function PlatformShell({ adminName, children }: { adminName: string; chil
   const router = useRouter()
   const section = sectionOf(pathname)
 
+  const goTo = (id: string) => router.push(id === 'overview' ? '/platform' : `/platform/${id}`)
+
   return (
-    <div data-theme="light" className="flex h-screen bg-bg text-ink">
-      <Sidebar items={platformNav} active={section} onSelect={(id) => router.push(id === 'overview' ? '/platform' : `/platform/${id}`)} />
+    <div data-theme="light" className="flex h-dvh overflow-hidden bg-bg text-ink">
+      <Sidebar className="hidden md:flex" items={platformNav} active={section} onSelect={goTo} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-8">
-          <ShieldCheck className="size-[18px] text-ink" aria-hidden />
-          <p className="text-[15px] font-semibold text-ink">GatePass Platform</p>
-          <span className="rounded-full bg-neutral-bg px-2 py-0.5 text-xs font-semibold text-neutral-fg">Internal</span>
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 md:px-8">
+          <ShieldCheck className="size-[18px] shrink-0 text-ink" aria-hidden />
+          <p className="truncate text-[15px] font-semibold text-ink">GatePass Platform</p>
+          <span className="hidden shrink-0 rounded-full bg-neutral-bg px-2 py-0.5 text-xs font-semibold text-neutral-fg sm:inline-block">Internal</span>
           <div className="ml-auto flex items-center gap-3">
             <Avatar name={adminName} size="sm" />
             <span className="hidden text-sm font-medium text-ink lg:block">{adminName}</span>
@@ -43,9 +45,10 @@ export function PlatformShell({ adminName, children }: { adminName: string; chil
             </button>
           </div>
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[1180px] px-8 pb-16 pt-8">{children}</div>
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto max-w-[1180px] px-4 pb-10 pt-6 md:px-8 md:pb-16 md:pt-8">{children}</div>
         </main>
+        <BottomTabs className="md:hidden" items={platformNav} active={section} onSelect={goTo} />
       </div>
     </div>
   )

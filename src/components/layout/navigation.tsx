@@ -46,17 +46,22 @@ export function Sidebar({
   active,
   onSelect,
   tenant,
+  className,
 }: {
   items: NavItem[];
   active: string;
   onSelect: (id: string) => void;
   /** Estate switcher label. Omit for company-level areas, which have no tenant switcher. */
   tenant?: string;
+  className?: string;
 }) {
   return (
     <nav
       aria-label="Primary"
-      className="flex w-60 shrink-0 flex-col gap-6 border-r border-line bg-surface px-3 py-5"
+      className={cn(
+        "flex w-60 shrink-0 flex-col gap-6 border-r border-line bg-surface px-3 py-5",
+        className,
+      )}
     >
       <Logo className="px-3" />
       {tenant && (
@@ -145,17 +150,22 @@ export function BottomTabs({
   active,
   onSelect,
   badges,
+  className,
 }: {
   items: NavItem[];
   active: string;
   onSelect: (id: string) => void;
   /** Small unread-count dot per tab id. 0/undefined shows nothing. */
   badges?: Record<string, number>;
+  className?: string;
 }) {
   return (
     <nav
       aria-label="Primary"
-      className="flex h-16 shrink-0 border-t border-line bg-surface pb-1"
+      className={cn(
+        "flex h-16 shrink-0 border-t border-line bg-surface pb-[max(0.25rem,env(safe-area-inset-bottom))]",
+        className,
+      )}
     >
       {items.map((it) => {
         const on = it.id === active;

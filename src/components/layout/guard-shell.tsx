@@ -23,7 +23,7 @@ export function GuardShell({ estateId, estateName, children }: { estateId: strin
   const go = (id: Section) => router.push(id === 'verify' ? `/guard/${estateId}` : `/guard/${estateId}/${id}`)
 
   return (
-    <div data-theme="guard" className="flex h-screen flex-col bg-bg text-ink">
+    <div data-theme="guard" className="flex h-dvh flex-col overflow-hidden bg-bg text-ink">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-5">
         <p className="truncate text-[15px] font-semibold text-ink">{estateName} · Gate</p>
         {/* TODO(phase 5): read the signed-in guard from the session instead of a placeholder. */}
@@ -37,7 +37,7 @@ export function GuardShell({ estateId, estateName, children }: { estateId: strin
           <LogOut className="size-[18px]" aria-hidden />
         </button>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto max-w-[560px] px-4 pb-8 pt-6">{children}</div>
       </main>
       <BottomTabs items={guardNav} active={section} onSelect={(id) => go(id as Section)} />
