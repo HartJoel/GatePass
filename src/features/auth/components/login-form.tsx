@@ -1,22 +1,21 @@
 'use client'
 
 import { useRef, useState, type FormEvent } from 'react'
-import { CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Banner } from '@/components/ui/banner'
 import { Field } from '@/components/ui/field'
-import { LinkButton } from '@/components/ui/button'
-import { AuthCard, AuthFooter, AuthHeader, PasswordField, StatePanel, SubmitButton, focusFirstInvalid, linkClass, v } from './auth-shell'
+import { AuthCard, AuthFooter, AuthHeader, PasswordField, SubmitButton, focusFirstInvalid, linkClass, v } from './auth-shell'
 import { signInAction } from '@/server/actions/auth.actions'
 
 export function LoginForm() {
   const ref = useRef<HTMLFormElement>(null)
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [wrong, setWrong] = useState(false)
-  const [done, setDone] = useState(false)
 
   const errors = {
     email: submitted ? v.email(email) : undefined,
@@ -30,22 +29,15 @@ export function LoginForm() {
     setWrong(false)
     setBusy(true)
     const result = await signInAction({ email, password })
-    setBusy(false)
     if (result.error) {
+      setBusy(false)
       setWrong(true)
       return
     }
-    setDone(true)
+    // Stay busy through the redirect so the button doesn't flash back to idle.
+    // replace, not push: signing in shouldn't leave the sign-in form in back-button history.
+    router.replace('/dashboard')
   }
-
-  if (done)
-    return (
-      <AuthCard>
-        <StatePanel icon={CheckCircle2} tone="success" title="You’re signed in" actions={<LinkButton href="/dashboard">Continue to dashboard</LinkButton>}>
-          Welcome back. Pick up where you left off.
-        </StatePanel>
-      </AuthCard>
-    )
 
   return (
     <AuthCard>

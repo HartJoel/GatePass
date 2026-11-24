@@ -1,13 +1,12 @@
 'use client'
 
-import { Building2, LogOut } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
-import { BottomTabs, Sidebar } from '@/components/layout/navigation'
+import { BottomTabs, Sidebar, SignOutButton } from '@/components/layout/navigation'
 import { companyNav } from '@/lib/constants/navigation'
 import { useCompanyData } from '@/features/companies/components/company-data-provider'
-import { signOutAction } from '@/server/actions/auth.actions'
 
 type Section = (typeof companyNav)[number]['id']
 
@@ -44,15 +43,7 @@ export function CompanyShell({ companyId, children }: { companyId: string; child
               <Avatar name="Kemi Adebayo" />
               <span className="hidden text-sm font-medium text-ink lg:block">Kemi Adebayo</span>
             </div>
-            <button
-              type="button"
-              aria-label="Sign out"
-              title="Sign out"
-              className="rounded-control p-2.5 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-              onClick={() => signOutAction().then(() => router.push('/sign-in'))}
-            >
-              <LogOut className="size-[18px]" aria-hidden />
-            </button>
+            <SignOutButton className="p-2.5" />
           </div>
         </header>
 

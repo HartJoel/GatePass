@@ -1,9 +1,13 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Bell, ChevronsUpDown, Search } from "lucide-react";
-import type { ReactNode } from "react";
+import { Bell, ChevronsUpDown, LogOut, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/server/actions/auth.actions";
 
 export interface NavItem {
   id: string;
@@ -141,6 +145,52 @@ export function Topbar({
         KA
       </span>
     </header>
+  );
+}
+
+/** Icon button that confirms before signing out. Shared by every shell so the confirmation only lives once. */
+export function SignOutButton({ className }: { className?: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function confirm() {
+    setBusy(true);
+    await signOutAction();
+    router.push("/sign-in");
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Sign out"
+        title="Sign out"
+        onClick={() => setOpen(true)}
+        className={cn(
+          "rounded-control text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink",
+          className,
+        )}
+      >
+        <LogOut className="size-[18px]" aria-hidden />
+      </button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Sign out?"
+        description="You’ll need to sign in again to continue."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="destructive-ghost" loading={busy} onClick={confirm}>
+              {busy ? "Signing out…" : "Sign out"}
+            </Button>
+          </>
+        }
+      />
+    </>
   );
 }
 

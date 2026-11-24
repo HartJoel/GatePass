@@ -1,12 +1,11 @@
 'use client'
 
-import { LogOut, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
-import { BottomTabs, Sidebar } from '@/components/layout/navigation'
+import { BottomTabs, Sidebar, SignOutButton } from '@/components/layout/navigation'
 import { platformNav } from '@/lib/constants/navigation'
-import { signOutAction } from '@/server/actions/auth.actions'
 
 type Section = (typeof platformNav)[number]['id']
 
@@ -34,15 +33,7 @@ export function PlatformShell({ adminName, children }: { adminName: string; chil
           <div className="ml-auto flex items-center gap-3">
             <Avatar name={adminName} size="sm" />
             <span className="hidden text-sm font-medium text-ink lg:block">{adminName}</span>
-            <button
-              type="button"
-              aria-label="Sign out"
-              title="Sign out"
-              className="rounded-control p-2 text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
-              onClick={() => signOutAction().then(() => router.push('/sign-in'))}
-            >
-              <LogOut className="size-[18px]" aria-hidden />
-            </button>
+            <SignOutButton className="p-2" />
           </div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
